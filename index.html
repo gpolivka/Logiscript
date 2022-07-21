@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="de" height="100%">
+	<head>
+		<meta charset="utf-8">
+		<link href="logiscript.css" rel="stylesheet">	
+		<title>LogiScript</title>
+	</head>
+	<body>
+		<div id="div_body">
+			<div id="div_button_top">
+				<button class="button_top button_cursor" onclick="sel(0)"></button>
+				<button class="button_top button_wire button_top_placeholder" onclick="sel(1)"></button>
+				<button class="button_top button_not" onclick="newGate(types.not)">1</button>
+				<button class="button_top button_gate" onclick="newGate(types.and)">&</button>
+				<button class="button_top button_gate" onclick="newGate(types.or)">≥1</button>
+				<button class="button_top button_gate" onclick="newGate(types.xor)">=1</button>
+			</div>
+			
+			<div id="div_main">
+				<div id="div_button_side">
+					<button class="button_side button_load" onclick="load_circuit()"></button>
+					<button class="button_side button_save button_side_placeholder" onclick="save_circuit()"></button>
+					<button class="button_side button_zoomin" onclick="zoom_func(1)"></button>
+					<button class="button_side button_zoomout" onclick="zoom_func(-1)"></button>
+					<button class="button_side button_fit button_side_placeholder" onclick="view_fit()"></button>
+					<button class="button_side button_up" onclick="translate_func(0,2)"></button>
+					<button class="button_side button_down" onclick="translate_func(0,-2)"></button>
+					<button class="button_side button_left" onclick="translate_func(2,0)"></button>
+					<button class="button_side button_right" onclick="translate_func(-2,0)"></button>
+				</div>
+				
+				<div id="div_simulation">
+					<main id="main_p5js">
+
+					</main>
+				</div>
+				
+				<div id="div_button_side">
+					<button class="button_side button_manual" onclick="manual()"></button>
+					<button class="button_side button_task" onclick="task()"></button>
+					<button class="button_side button_check" onclick="check()"></button>
+					</div>
+			</div>
+			
+			<div id="div_footer">
+				<p id="p_footer"><a id="LogiScript" class="click_blue" onclick="LogiScript();">LogiScript</a> | <a id="Gernot" class="click_blue" onclick="Gernot();">Gernot Polivka</a> | Jahr: 2022</p>
+			</div>
+		</div>
+	
+		<script src="p5.min.js"></script>
+		<script src="logiscript.js"></script>
+	</body>
+</html>
