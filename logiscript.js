@@ -1,6 +1,7 @@
 document.addEventListener('contextmenu', event => event.preventDefault());
 window.onresize = windowResized;
 
+//HOVER FIXED
 
 const NOT = "1";
 const AND = "&";
@@ -20,7 +21,10 @@ const high_color = '#00FF00';
 
 const groups = {
 	wire: 0,
-	gate: 1
+	gate: 1,
+	input: 2,
+	output: 3,
+	fixed: 4
 }
 
 const types = {
@@ -54,6 +58,11 @@ var selected = 0;
 
 class Obj
 {
+	//wire:		spec_1 = wired		spec_2 = ###
+	//gate:		spec_1 = ###		spec_2 = ###
+	//input:	spec_1 = ###		spec_2 = ###
+	//output:	spec_1 = ###		spec_2 = ###
+	//fixed:	spec_1 = ###		spec_2 = ###
 	constructor(x,y,w,h,group,type,inv,stat,erase,spec_1,spec_2)
 	{
 		this.x = x;
@@ -135,7 +144,7 @@ class Obj
 				fill(undefined_color);
 				for(let o of objects)
 				{
-					if(o!=this && o.group==groups.gate)
+					if(o.group==groups.gate && o!=this)
 					{
 						if(this.x+this.w+grid_distance == o.x-grid_distance && (o.y<this.y+this.h/2-((this.h/grid_distance)%2)*grid_distance/2 && o.y+o.h>this.y+this.h/2-((this.h/grid_distance)%2)*grid_distance/2))
 						{
@@ -160,30 +169,143 @@ class Obj
 					{
 						if(o!=this)
 						{
-							if((o.x==this.x && o.y==this.y) || (o.x+o.w==this.x && o.y+o.h==this.y))
+							if(o.group==groups.wire)
 							{
-								circle(this.x, this.y, grid_distance/4);
+								if((o.x==this.x && o.y==this.y) || (o.x+o.w==this.x && o.y+o.h==this.y))
+								{
+									circle(this.x, this.y, grid_distance/4);
+								}
+								if((o.x==this.x+this.w && o.y==this.y+this.h) || (o.x+o.w==this.x+this.w && o.y+o.h==this.y+this.h))
+								{
+									circle(this.x+this.w, this.y+this.h, grid_distance/4);
+								}
 							}
-							if((o.x==this.x+this.w && o.y==this.y+this.h) || (o.x+o.w==this.x+this.w && o.y+o.h==this.y+this.h))
+							else if(o.group==groups.gate || o.group==groups.input || o.group==groups.output)
 							{
-								circle(this.x+this.w, this.y+this.h, grid_distance/4);
+								if(o.x-grid_distance==this.x && (this.y>o.y && this.y<(o.y+o.h)))
+								{
+									circle(this.x, this.y, grid_distance/4);
+								}
+								if(o.x-grid_distance==this.x+this.w && (this.y+this.h>o.y && this.y+this.h<(o.y+o.h)))
+								{
+									circle(this.x+this.w, this.y+this.h, grid_distance/4);
+								}
+								if(o.x+o.w+grid_distance==this.x && this.y==o.y+o.h/2-((o.h/grid_distance)%2)*grid_distance/2)
+								{
+									circle(this.x, this.y, grid_distance/4);
+								}
+								if(o.x+o.w+grid_distance==this.x+this.w && this.y+this.h==o.y+o.h/2-((o.h/grid_distance)%2)*grid_distance/2)
+								{
+									circle(this.x+this.w, this.y+this.h, grid_distance/4);
+								}
 							}
-							if(o.x-grid_distance==this.x && (this.y>o.y && this.y<(o.y+o.h)))
+							else if(o.group==groups.fixed)
 							{
-								circle(this.x, this.y, grid_distance/4);
+								//########################################
 							}
-							if(o.x-grid_distance==this.x+this.w && (this.y+this.h>o.y && this.y+this.h<(o.y+o.h)))
-							{
-								circle(this.x+this.w, this.y+this.h, grid_distance/4);
-							}
-							if(o.x+o.w+grid_distance==this.x && this.y==o.y+o.h/2-((o.h/grid_distance)%2)*grid_distance/2)
-							{
-								circle(this.x, this.y, grid_distance/4);
-							}
-							if(o.x+o.w+grid_distance==this.x+this.w && this.y+this.h==o.y+o.h/2-((o.h/grid_distance)%2)*grid_distance/2)
-							{
-								circle(this.x+this.w, this.y+this.h, grid_distance/4);
-							}
+						}
+					}
+				}
+				break;
+				
+			case groups.input:
+				stroke(gate_stroke_color);
+				strokeWeight(grid_distance/5);
+				rect(this.x, this.y, this.w, this.h, corner_radius);
+				stroke(grab_color);
+				strokeWeight(grid_distance/10);
+				rect(this.x+grid_distance/10, this.y+grid_distance/10, this.w-grid_distance/5, this.h-grid_distance/5);
+				fill(0);
+				
+				stroke(gate_color);
+				textSize(grid_distance);
+				textFont('Arial');
+				textStyle(BOLD);
+				textAlign(CENTER, CENTER);
+				text(this.stat, this.x+(this.w/2), this.y+(this.h/2));
+				
+				stroke(undefined_color);
+				strokeWeight(grid_distance/5);
+				line(this.x+this.w+(grid_distance/5), this.y+this.h/2-((this.h/grid_distance)%2)*grid_distance/2, this.x+this.w+grid_distance, this.y+this.h/2-((this.h/grid_distance)%2)*grid_distance/2);
+				
+				stroke(undefined_color);
+				strokeWeight(grid_distance/5);
+				fill(undefined_color);
+				for(let o of objects)
+				{
+					if(o!=this && o.group==groups.gate)
+					{
+						if(this.x+this.w+grid_distance == o.x-grid_distance && (o.y<this.y+this.h/2-((this.h/grid_distance)%2)*grid_distance/2 && o.y+o.h>this.y+this.h/2-((this.h/grid_distance)%2)*grid_distance/2))
+						{
+							circle(this.x+this.w+grid_distance, this.y+this.h/2-((this.h/grid_distance)%2)*grid_distance/2, grid_distance/4);
+						}
+					}
+				}
+				break;
+				
+			case groups.output:
+				stroke(gate_stroke_color);
+				strokeWeight(grid_distance/5);
+				if(this.stat==1)
+				{
+					fill(high_color);
+				}
+				else
+				{
+					fill(low_color);
+				}
+				rect(this.x, this.y, this.w, this.h, corner_radius);
+				fill(0);
+				
+				stroke(gate_color);
+				textSize(grid_distance);
+				textFont('Arial');
+				textStyle(BOLD);
+				textAlign(CENTER, CENTER);
+				text(this.stat, this.x+(this.w/2), this.y+(this.h/2));
+				
+				stroke(undefined_color);
+				strokeWeight(grid_distance/5);
+				line(this.x-(grid_distance/5), this.y+this.h/2-((this.h/grid_distance)%2)*grid_distance/2, this.x-grid_distance, this.y+this.h/2-((this.h/grid_distance)%2)*grid_distance/2);
+				
+				stroke(undefined_color);
+				strokeWeight(grid_distance/5);
+				fill(undefined_color);
+				for(let o of objects)
+				{
+					if((o.group==groups.gate || o.group==groups.input) && o!=this)
+					{
+						if(this.x-grid_distance==o.x+o.w+grid_distance && this.y+grid_distance==o.y+o.h/2-((o.h/grid_distance)%2)*grid_distance/2)
+						{
+							circle(this.x-grid_distance, this.y+this.h/2-((this.h/grid_distance)%2)*grid_distance/2, grid_distance/4);
+						}
+					}
+				}
+				break;
+				
+			case groups.fixed:
+				fill(0);
+				stroke(gate_color);
+				textSize(grid_distance);
+				textFont('Arial');
+				textStyle(BOLD);
+				textAlign(CENTER, CENTER);
+				text(this.stat, this.x, this.y);
+				
+				stroke(undefined_color);
+				strokeWeight(grid_distance/5);
+				line(this.x+grid_distance/2, this.y, this.x+grid_distance, this.y);
+				
+				stroke(undefined_color);
+				strokeWeight(grid_distance/5);
+				fill(undefined_color);
+				for(let o of objects)
+				{
+					if((o.group==groups.gate || o.group==groups.output || o.group==groups.fixed) && o!=this)
+					{
+						if(this.x+grid_distance==o.x-grid_distance && (this.y>o.y && this.y<(o.y+o.h)))
+						{
+							circle(this.x+grid_distance, this.y, grid_distance/4);
 						}
 					}
 				}
@@ -231,7 +353,7 @@ function draw()
 	hover = null;
 	for(let o of objects)
 	{
-		if(o.group==groups.gate && m.x>o.x-grab_tolerance*(grid_distance/5) && m.x<o.x+o.w+grab_tolerance*(grid_distance/5) && m.y>o.y-grab_tolerance*(grid_distance/5) && m.y<o.y+o.h+grab_tolerance*(grid_distance/5))
+		if(o.group!=groups.wire && m.x>o.x-grab_tolerance*(grid_distance/5) && m.x<o.x+o.w+grab_tolerance*(grid_distance/5) && m.y>o.y-grab_tolerance*(grid_distance/5) && m.y<o.y+o.h+grab_tolerance*(grid_distance/5))
 		{
 			hover = o;
 		}
@@ -361,10 +483,13 @@ function mousePressed()
 
 function mouseReleased()
 {
-	grabbed.x = round(grabbed.x/grid_distance)*grid_distance;
-	grabbed.y = round(grabbed.y/grid_distance)*grid_distance;
-	grabbed.draw();
-	grabbed = null;
+	if(grabbed)
+	{
+		grabbed.x = round(grabbed.x/grid_distance)*grid_distance;
+		grabbed.y = round(grabbed.y/grid_distance)*grid_distance;
+		grabbed.draw();
+		grabbed = null;
+	}
 }
 
 function mouseDragged()
@@ -506,46 +631,46 @@ function view_fit()
 	
 	for(let o of objects)
 	{
-		if(o.x < o_x_min.x)
+		if(o.x<o_x_min.x || o.x+o.w<o_x_min.x || (o.x<o_x_min.x+o_x_min.w && o_x_min.w<0))
 		{
 			o_x_min = o;
 		}
-		if(o.x > o_x_max.x)
+		if(o.x+o.w>o_x_max.x+o_x_max.w || o.x-o.w>o_x_max.x+o_x_max.w || (o.x+o.w>o_x_max.x-o_x_max.w && o_x_max.w<0))
 		{
 			o_x_max = o;
 		}
-		if(o.y < o_y_min.y)
+		if(o.y<o_y_min.y || o.y+o.h<o_y_min.y || (o.y<o_y_min.y+o_y_min.h && o_y_min.h<0))
 		{
 			o_y_min = o;
 		}
-		if(o.y > o_y_max.y)
+		if(o.y+o.h>o_y_max.y+o_y_max.h || o.y-o.h>o_y_max.y+o_y_max.h || (o.y+o.h>o_y_max.y-o_y_max.h && o_y_max.h<0))
 		{
 			o_y_max = o;
 		}
 	}
 	
-	while(o_x_min.x < 2*grid_distance)
+	while(o_x_min.x<2*grid_distance || o_x_min.x+o_x_min.w<2*grid_distance)
 	{
 		translate_func(-1,0);
 	}
-	while(o_y_min.y < grid_distance)
+	while(o_y_min.y<grid_distance || o_y_min.y+o_y_min.h<grid_distance)
 	{
 		translate_func(0,-1);
 	}
-	while(o_x_min.x > 2*grid_distance)
+	while(o_x_min.x>grid_distance && o_x_min.x+o_x_min.w>grid_distance)
 	{
 		translate_func(1,0);
 	}
-	while(o_y_min.y > grid_distance)
+	while(o_y_min.y>grid_distance && o_y_min.y+o_y_min.h>grid_distance)
 	{
 		translate_func(0,1);
 	}
 	
-	while(o_x_max.x+o_x_max.w < width && o_y_max.y+o_y_max.h < height && grid_distance < grid_distance_max)
+	while(grid_distance<grid_distance_max)
 	{
 		zoom_func(1);
 	}
-	while((o_x_max.x+o_x_max.w > width-grid_distance || o_y_max.y+o_y_max.h > height-grid_distance) && grid_distance > grid_distance_min)
+	while((o_x_max.x>width || o_x_max.x+o_x_max.w>width || o_y_max.y>height || o_y_max.y+o_y_max.h>height) && grid_distance>grid_distance_min)
 	{
 		zoom_func(-1);
 	}
@@ -585,6 +710,18 @@ function newGate(type)
 	objects.push(new Obj(round((random(width/2))/grid_distance+2)*grid_distance, round((random(height/2))/grid_distance+2)*grid_distance, 2*grid_distance, (inputs+1)*grid_distance, groups.gate,type,inv,0,0,0,0));
 }
 
+function newInOut(group)
+{
+	if(group==groups.fixed)
+	{
+		objects.push(new Obj(round((random(width/2))/grid_distance+2)*grid_distance, round((random(height/2))/grid_distance+2)*grid_distance, grid_distance, grid_distance, group,0,0,1,0,0,0));
+	}
+	else
+	{
+		objects.push(new Obj(round((random(width/2))/grid_distance+2)*grid_distance, round((random(height/2))/grid_distance+2)*grid_distance, 2*grid_distance, 2*grid_distance, group,0,0,1,0,0,0));
+	}
+}
+
 function sel(item)
 {
 	selected = item;
@@ -618,7 +755,7 @@ function save_circuit()
 
 function manual()
 {
-	alert("Simulator-Handbuch");
+	alert("Handbuch");
 }
 
 function task()

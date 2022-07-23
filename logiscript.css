@@ -105,6 +105,18 @@ button {
 	background-image: url('./images/wire.png' );
 }
 
+.button_input {
+	background-image: url('./images/input.png' );
+}
+
+.button_output {
+	background-image: url('./images/output.png' );
+}
+
+.button_fixed {
+	background-image: url('./images/fixed.png' );
+}
+
 .button_manual {
 	background-image: url('./images/manual.png' );
 }
