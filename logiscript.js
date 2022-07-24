@@ -45,6 +45,7 @@ var grabbed;
 var hover;
 var wired;
 var objects = [];
+var connections = [];
 var corner_radius = 2;
 var trans_x = 0;
 var trans_y = 0;
@@ -60,8 +61,8 @@ class Obj
 {
 	//wire:		spec_1 = wired		spec_2 = ###
 	//gate:		spec_1 = ###		spec_2 = ###
-	//input:	spec_1 = ###		spec_2 = ###
-	//output:	spec_1 = ###		spec_2 = ###
+	//input:	spec_1 = label		spec_2 = ###
+	//output:	spec_1 = label		spec_2 = ###
 	//fixed:	spec_1 = ###		spec_2 = ###
 	constructor(x,y,w,h,group,type,inv,stat,erase,spec_1,spec_2)
 	{
@@ -138,20 +139,6 @@ class Obj
 						circle(this.x, this.y+(i*grid_distance), grid_distance/2);
 					}
 				}
-				
-				stroke(undefined_color);
-				strokeWeight(grid_distance/5);
-				fill(undefined_color);
-				for(let o of objects)
-				{
-					if(o.group==groups.gate && o!=this)
-					{
-						if(this.x+this.w+grid_distance == o.x-grid_distance && (o.y<this.y+this.h/2-((this.h/grid_distance)%2)*grid_distance/2 && o.y+o.h>this.y+this.h/2-((this.h/grid_distance)%2)*grid_distance/2))
-						{
-							circle(this.x+this.w+grid_distance, this.y+this.h/2-((this.h/grid_distance)%2)*grid_distance/2, grid_distance/4);
-						}
-					}
-				}
 				break;
 			
 			case groups.wire:
@@ -165,46 +152,6 @@ class Obj
 				{
 					fill(undefined_color);
 					line(this.x, this.y, this.x+this.w, this.y+this.h);
-					for(let o of objects)
-					{
-						if(o!=this)
-						{
-							if(o.group==groups.wire)
-							{
-								if((o.x==this.x && o.y==this.y) || (o.x+o.w==this.x && o.y+o.h==this.y))
-								{
-									circle(this.x, this.y, grid_distance/4);
-								}
-								if((o.x==this.x+this.w && o.y==this.y+this.h) || (o.x+o.w==this.x+this.w && o.y+o.h==this.y+this.h))
-								{
-									circle(this.x+this.w, this.y+this.h, grid_distance/4);
-								}
-							}
-							else if(o.group==groups.gate || o.group==groups.input || o.group==groups.output)
-							{
-								if(o.x-grid_distance==this.x && (this.y>o.y && this.y<(o.y+o.h)))
-								{
-									circle(this.x, this.y, grid_distance/4);
-								}
-								if(o.x-grid_distance==this.x+this.w && (this.y+this.h>o.y && this.y+this.h<(o.y+o.h)))
-								{
-									circle(this.x+this.w, this.y+this.h, grid_distance/4);
-								}
-								if(o.x+o.w+grid_distance==this.x && this.y==o.y+o.h/2-((o.h/grid_distance)%2)*grid_distance/2)
-								{
-									circle(this.x, this.y, grid_distance/4);
-								}
-								if(o.x+o.w+grid_distance==this.x+this.w && this.y+this.h==o.y+o.h/2-((o.h/grid_distance)%2)*grid_distance/2)
-								{
-									circle(this.x+this.w, this.y+this.h, grid_distance/4);
-								}
-							}
-							else if(o.group==groups.fixed)
-							{
-								//########################################
-							}
-						}
-					}
 				}
 				break;
 				
@@ -221,26 +168,26 @@ class Obj
 				textSize(grid_distance);
 				textFont('Arial');
 				textStyle(BOLD);
-				textAlign(CENTER, CENTER);
-				text(this.stat, this.x+(this.w/2), this.y+(this.h/2));
+				textAlign(RIGHT, CENTER);
+				if(this.spec_1>=10)
+				{
+					text("E", this.x+(this.w/2)+grid_distance/8, this.y+(this.h/2));
+					textSize(grid_distance/2);
+					textAlign(LEFT, CENTER);
+					text(this.spec_1, this.x+(this.w/2)+grid_distance/8, this.y+(this.h/2)+grid_distance/2);
+				}
+				else
+				{
+					text("E", this.x+(this.w/2)+grid_distance/4, this.y+(this.h/2));
+					textSize(grid_distance/2);
+					textAlign(LEFT, CENTER);
+					text(this.spec_1, this.x+(this.w/2)+grid_distance/4, this.y+(this.h/2)+grid_distance/2);
+
+				}
 				
 				stroke(undefined_color);
 				strokeWeight(grid_distance/5);
 				line(this.x+this.w+(grid_distance/5), this.y+this.h/2-((this.h/grid_distance)%2)*grid_distance/2, this.x+this.w+grid_distance, this.y+this.h/2-((this.h/grid_distance)%2)*grid_distance/2);
-				
-				stroke(undefined_color);
-				strokeWeight(grid_distance/5);
-				fill(undefined_color);
-				for(let o of objects)
-				{
-					if(o!=this && o.group==groups.gate)
-					{
-						if(this.x+this.w+grid_distance == o.x-grid_distance && (o.y<this.y+this.h/2-((this.h/grid_distance)%2)*grid_distance/2 && o.y+o.h>this.y+this.h/2-((this.h/grid_distance)%2)*grid_distance/2))
-						{
-							circle(this.x+this.w+grid_distance, this.y+this.h/2-((this.h/grid_distance)%2)*grid_distance/2, grid_distance/4);
-						}
-					}
-				}
 				break;
 				
 			case groups.output:
@@ -261,26 +208,25 @@ class Obj
 				textSize(grid_distance);
 				textFont('Arial');
 				textStyle(BOLD);
-				textAlign(CENTER, CENTER);
-				text(this.stat, this.x+(this.w/2), this.y+(this.h/2));
+				textAlign(RIGHT, CENTER);
+				if(this.spec_1>=10)
+				{
+					text("A", this.x+(this.w/2)+grid_distance/8, this.y+(this.h/2));
+					textSize(grid_distance/2);
+					textAlign(LEFT, CENTER);
+					text(this.spec_1, this.x+(this.w/2)+grid_distance/8, this.y+(this.h/2)+grid_distance/2);
+				}
+				else
+				{
+					text("A", this.x+(this.w/2)+grid_distance/4, this.y+(this.h/2));
+					textSize(grid_distance/2);
+					textAlign(LEFT, CENTER);
+					text(this.spec_1, this.x+(this.w/2)+grid_distance/4, this.y+(this.h/2)+grid_distance/2);
+				}
 				
 				stroke(undefined_color);
 				strokeWeight(grid_distance/5);
 				line(this.x-(grid_distance/5), this.y+this.h/2-((this.h/grid_distance)%2)*grid_distance/2, this.x-grid_distance, this.y+this.h/2-((this.h/grid_distance)%2)*grid_distance/2);
-				
-				stroke(undefined_color);
-				strokeWeight(grid_distance/5);
-				fill(undefined_color);
-				for(let o of objects)
-				{
-					if((o.group==groups.gate || o.group==groups.input) && o!=this)
-					{
-						if(this.x-grid_distance==o.x+o.w+grid_distance && this.y+grid_distance==o.y+o.h/2-((o.h/grid_distance)%2)*grid_distance/2)
-						{
-							circle(this.x-grid_distance, this.y+this.h/2-((this.h/grid_distance)%2)*grid_distance/2, grid_distance/4);
-						}
-					}
-				}
 				break;
 				
 			case groups.fixed:
@@ -295,26 +241,28 @@ class Obj
 				stroke(undefined_color);
 				strokeWeight(grid_distance/5);
 				line(this.x+grid_distance/2, this.y, this.x+grid_distance, this.y);
-				
-				stroke(undefined_color);
-				strokeWeight(grid_distance/5);
-				fill(undefined_color);
-				for(let o of objects)
-				{
-					if((o.group==groups.gate || o.group==groups.output || o.group==groups.fixed) && o!=this)
-					{
-						if(this.x+grid_distance==o.x-grid_distance && (this.y>o.y && this.y<(o.y+o.h)))
-						{
-							circle(this.x+grid_distance, this.y, grid_distance/4);
-						}
-					}
-				}
 				break;
 			
 			default:
 			
 				break;
 		}
+		draw_connections();
+	}
+}
+
+class Con
+{
+	constructor(x,y,obj_list=[])
+	{
+		this.x = x;
+		this.y = y;
+		this.obj_list = obj_list;
+	}
+	
+	draw()
+	{
+		circle(this.x, this.y, grid_distance/4);
 	}
 }
 
@@ -353,9 +301,12 @@ function draw()
 	hover = null;
 	for(let o of objects)
 	{
-		if(o.group!=groups.wire && m.x>o.x-grab_tolerance*(grid_distance/5) && m.x<o.x+o.w+grab_tolerance*(grid_distance/5) && m.y>o.y-grab_tolerance*(grid_distance/5) && m.y<o.y+o.h+grab_tolerance*(grid_distance/5))
+		if(o.group==groups.gate || o.group==groups.input || o.group==groups.output)
 		{
-			hover = o;
+			if(m.x>o.x-grab_tolerance*(grid_distance/5) && m.x<o.x+o.w+grab_tolerance*(grid_distance/5) && m.y>o.y-grab_tolerance*(grid_distance/5) && m.y<o.y+o.h+grab_tolerance*(grid_distance/5))
+			{
+				hover = o;
+			}
 		}
 		else if(o.group==groups.wire)
 		{
@@ -367,6 +318,13 @@ function draw()
 				{
 					hover = o;
 				}
+			}
+		}
+		else if(o.group==groups.fixed)
+		{
+			if(m.x>o.x-grid_distance/2 && m.x<o.x+grid_distance/2 && m.y>o.y-grid_distance/2 && m.y<o.y+grid_distance/2)
+			{
+				hover = o;
 			}
 		}
 	}
@@ -394,6 +352,310 @@ function draw()
 			fill(gate_color);
 		}
 		o.draw();
+	}
+}
+
+function update_connections()
+{
+	connections.length = 0;
+	var found = 0;
+	for(let o of objects)
+	{
+		switch(o.group)
+		{
+			case groups.gate:
+				for(let p of objects)
+				{
+					if(p.group==groups.gate && p!=o)
+					{
+						if(o.x+o.w+grid_distance == p.x-grid_distance && (p.y<o.y+o.h/2-((o.h/grid_distance)%2)*grid_distance/2 && p.y+p.h>o.y+o.h/2-((o.h/grid_distance)%2)*grid_distance/2))
+						{
+							found = 0;
+							for(let c of connections)
+							{
+								if(c.x==o.x+o.w+grid_distance && c.y==o.y+o.h/2-((o.h/grid_distance)%2)*grid_distance/2)
+								{
+									c.obj_list.push(o);
+									found = 1;
+								}
+							}
+							if(found==0)
+							{
+								new_Con = new Con(o.x+o.w+grid_distance, o.y+o.h/2-((o.h/grid_distance)%2)*grid_distance/2);
+								new_Con.obj_list.push(o);
+								connections.push(new_Con);
+							}
+						}
+					}
+				}
+				break;
+			
+			case groups.wire:
+				if(o.spec_1 == 1)
+				{
+					line(o.x, o.y, mouseX, mouseY);
+				}
+				else
+				{
+					for(let p of objects)
+					{
+						if(p!=o)
+						{
+							if(p.group==groups.wire)
+							{
+								if((p.x==o.x && p.y==o.y) || (p.x+p.w==o.x && p.y+p.h==o.y))
+								{
+									found = 0;
+									for(let c of connections)
+									{
+										if(c.x==o.x && c.y==o.y)
+										{
+											c.obj_list.push(o);
+											found = 1;
+										}
+									}
+									if(found==0)
+									{
+										new_Con = new Con(o.x, o.y);
+										new_Con.obj_list.push(o);
+										connections.push(new_Con);
+									}
+								}
+								if((p.x==o.x+o.w && p.y==o.y+o.h) || (p.x+p.w==o.x+o.w && p.y+p.h==o.y+o.h))
+								{
+									found = 0;
+									for(let c of connections)
+									{
+										if(c.x==o.x+o.w && c.y==o.y+o.h)
+										{
+											c.obj_list.push(o);
+											found = 1;
+										}
+									}
+									if(found==0)
+									{
+										new_Con = new Con(o.x+o.w, o.y+o.h);
+										new_Con.obj_list.push(o);
+										connections.push(new_Con);
+									}
+								}
+							}
+							else if(p.group==groups.gate || p.group==groups.input || p.group==groups.output)
+							{
+								if(p.x-grid_distance==o.x && (o.y>p.y && o.y<(p.y+p.h)))
+								{
+									found = 0;
+									for(let c of connections)
+									{
+										if(c.x==o.x && c.y==o.y)
+										{
+											c.obj_list.push(o);
+											found = 1;
+										}
+									}
+									if(found==0)
+									{
+										new_Con = new Con(o.x, o.y);
+										new_Con.obj_list.push(o);
+										connections.push(new_Con);
+									}
+								}
+								if(p.x-grid_distance==o.x+o.w && (o.y+o.h>p.y && o.y+o.h<(p.y+p.h)))
+								{
+									found = 0;
+									for(let c of connections)
+									{
+										if(c.x==o.x+o.w && c.y==o.y+o.h)
+										{
+											c.obj_list.push(o);
+											found = 1;
+										}
+									}
+									if(found==0)
+									{
+										new_Con = new Con(o.x+o.w, o.y+o.h);
+										new_Con.obj_list.push(o);
+										connections.push(new_Con);
+									}
+								}
+								if(p.x+p.w+grid_distance==o.x && o.y==p.y+p.h/2-((p.h/grid_distance)%2)*grid_distance/2)
+								{
+									found = 0;
+									for(let c of connections)
+									{
+										if(c.x==o.x && c.y==o.y)
+										{
+											c.obj_list.push(o);
+											found = 1;
+										}
+									}
+									if(found==0)
+									{
+										new_Con = new Con(o.x, o.y);
+										new_Con.obj_list.push(o);
+										connections.push(new_Con);
+									}
+								}
+								if(p.x+p.w+grid_distance==o.x+o.w && o.y+o.h==p.y+p.h/2-((p.h/grid_distance)%2)*grid_distance/2)
+								{
+									found = 0;
+									for(let c of connections)
+									{
+										if(c.x==o.x+o.w && c.y==o.y+o.h)
+										{
+											c.obj_list.push(o);
+											found = 1;
+										}
+									}
+									if(found==0)
+									{
+										new_Con = new Con(o.x+o.w, o.y+o.h);
+										new_Con.obj_list.push(o);
+										connections.push(new_Con);
+									}
+								}
+							}
+							else if(p.group==groups.fixed)
+							{
+								if(p.x+grid_distance==o.x && p.y==o.y)
+								{
+									found = 0;
+									for(let c of connections)
+									{
+										if(c.x==o.x && c.y==o.y)
+										{
+											c.obj_list.push(o);
+											found = 1;
+										}
+									}
+									if(found==0)
+									{
+										new_Con = new Con(o.x, o.y);
+										new_Con.obj_list.push(o);
+										connections.push(new_Con);
+									}
+								}
+								if(p.x+grid_distance==o.x+o.w && p.y==o.y+o.h)
+								{
+									found = 0;
+									for(let c of connections)
+									{
+										if(c.x==o.x+o.w && c.y==o.y+o.h)
+										{
+											c.obj_list.push(o);
+											found = 1;
+										}
+									}
+									if(found==0)
+									{
+										new_Con = new Con(o.x+o.w, o.y+o.h);
+										new_Con.obj_list.push(o);
+										connections.push(new_Con);
+									}
+								}
+							}
+						}
+					}
+				}
+				break;
+				
+			case groups.input:
+				for(let p of objects)
+				{
+					if(p!=o && p.group==groups.gate)
+					{
+						if(o.x+o.w+grid_distance == p.x-grid_distance && (p.y<o.y+o.h/2-((o.h/grid_distance)%2)*grid_distance/2 && p.y+p.h>o.y+o.h/2-((o.h/grid_distance)%2)*grid_distance/2))
+						{
+							found = 0;
+							for(let c of connections)
+							{
+								if(c.x==o.x+o.w+grid_distance && c.y==o.y+o.h/2-((o.h/grid_distance)%2)*grid_distance/2)
+								{
+									c.obj_list.push(o);
+									found = 1;
+								}
+							}
+							if(found==0)
+							{
+								new_Con = new Con(o.x+o.w+grid_distance, o.y+o.h/2-((o.h/grid_distance)%2)*grid_distance/2);
+								new_Con.obj_list.push(o);
+								connections.push(new_Con);
+							}
+						}
+					}
+				}
+				break;
+				
+			case groups.output:
+				for(let p of objects)
+				{
+					if((p.group==groups.gate || p.group==groups.input) && p!=o)
+					{
+						if(o.x-grid_distance==p.x+p.w+grid_distance && o.y+grid_distance==p.y+p.h/2-((p.h/grid_distance)%2)*grid_distance/2)
+						{
+							found = 0;
+							for(let c of connections)
+							{
+								if(c.x==o.x-grid_distance && c.y==o.y+o.h/2-((o.h/grid_distance)%2)*grid_distance/2, grid_distance/4)
+								{
+									c.obj_list.push(o);
+									found = 1;
+								}
+							}
+							if(found==0)
+							{
+								new_Con = new Con(o.x-grid_distance, o.y+o.h/2-((o.h/grid_distance)%2)*grid_distance/2, grid_distance/4);
+								new_Con.obj_list.push(o);
+								connections.push(new_Con);
+							}
+						}
+					}
+				}
+				break;
+				
+			case groups.fixed:
+				for(let p of objects)
+				{
+					if((p.group==groups.gate || p.group==groups.output || p.group==groups.fixed) && p!=o)
+					{
+						if(o.x+grid_distance==p.x-grid_distance && (o.y>p.y && o.y<(p.y+p.h)))
+						{
+							found = 0;
+							for(let c of connections)
+							{
+								if(c.x==o.x+grid_distance && c.y==o.y)
+								{
+									c.obj_list.push(o);
+									found = 1;
+								}
+							}
+							if(found==0)
+							{
+								new_Con = new Con(o.x+grid_distance, o.y);
+								new_Con.obj_list.push(o);
+								connections.push(new_Con);
+							}
+						}
+					}
+				}
+				break;
+				
+			default:
+			
+				break;
+		}
+	}
+}
+
+function draw_connections()
+{
+	stroke(undefined_color);
+	strokeWeight(grid_distance/5);
+	fill(undefined_color);
+	
+	for(let c of connections)
+	{
+		circle(c.x, c.y, grid_distance/4);
 	}
 }
 
@@ -479,16 +741,29 @@ function mousePressed()
 		objects.pop();
 		wired = null;
 	}
+	update_connections();
 }
 
 function mouseReleased()
 {
 	if(grabbed)
 	{
+		if((grabbed.group==groups.input || grabbed.group==groups.fixed) && grabbed.x==round(grabbed.x/grid_distance)*grid_distance && grabbed.y==round(grabbed.y/grid_distance)*grid_distance)
+		{
+			if(grabbed.stat==0)
+			{
+				grabbed.stat = 1;
+			}
+			else
+			{
+				grabbed.stat = 0;
+			}
+		}
 		grabbed.x = round(grabbed.x/grid_distance)*grid_distance;
 		grabbed.y = round(grabbed.y/grid_distance)*grid_distance;
 		grabbed.draw();
 		grabbed = null;
+		update_connections();
 	}
 }
 
@@ -498,6 +773,7 @@ function mouseDragged()
 	{
 		grabbed.x += movedX;
 		grabbed.y += movedY;
+		update_connections();
 	}
 }
 
@@ -539,6 +815,7 @@ function keyPressed()
 		default:
 			break;
 	}
+	update_connections();
 }
 
 function keyTyped()
@@ -572,9 +849,11 @@ function keyTyped()
 		default:
 			break;
 	}
+	update_connections();
 }
 
-function grid() {
+function grid()
+{
     fill(grid_dot_color);
 	noStroke();
     for (y=grid_start_y+grid_distance; y<grid_size_y+grid_start_y; y+=grid_distance)
@@ -608,22 +887,28 @@ function zoom_func(dir)
 			o.h = o.h/(grid_distance-5*dir)*grid_distance;
 		}
 	}
+	update_connections();
 }
 
 function translate_func(x, y)
 {
 	trans_x -= x*grid_distance;
 	trans_y -= y*grid_distance;
-	
 	for(let o of objects)
 	{
 		o.x -= x*grid_distance;
 		o.y -= y*grid_distance;
 	}
+	update_connections();
 }
 
 function view_fit()
 {	
+	if(objects.length==0)
+	{
+		return;
+	}
+	
 	var o_x_min = objects[0];
 	var o_y_min = objects[0];
 	var o_x_max = objects[0];
@@ -690,16 +975,17 @@ function newGate(type)
 	
 	if(type != types.not)
 	{
-		while(!(inputs = +(prompt("Anzahl der Eingänge:"))) || inputs < 2 || inputs > max_inputs)
+		var read = prompt("Anzahl der Eingänge: [2;"+max_inputs+"]");
+		inputs = parseInt(read, 10);
+		
+		if(inputs>max_inputs || inputs<2 || isNaN(inputs))
 		{
-			if(inputs == 0)
-			{
-				return;
-			}
-			else
+			if(read!=null)
 			{
 				alert("Bitte geben Sie nur Zahlen [2;"+max_inputs+"] ein!");
+				newGate(type);
 			}
+			return;
 		}
 	}
 	else
@@ -708,18 +994,44 @@ function newGate(type)
 	}
 	
 	objects.push(new Obj(round((random(width/2))/grid_distance+2)*grid_distance, round((random(height/2))/grid_distance+2)*grid_distance, 2*grid_distance, (inputs+1)*grid_distance, groups.gate,type,inv,0,0,0,0));
+	update_connections();
 }
 
 function newInOut(group)
 {
-	if(group==groups.fixed)
+	var label = 1;
+	
+	for(let o of objects)
 	{
-		objects.push(new Obj(round((random(width/2))/grid_distance+2)*grid_distance, round((random(height/2))/grid_distance+2)*grid_distance, grid_distance, grid_distance, group,0,0,1,0,0,0));
+		if(o.group==group)
+		{
+			label++;
+		}
 	}
-	else
+	
+	objects.push(new Obj(round((random(width/2))/grid_distance+2)*grid_distance, round((random(height/2))/grid_distance+2)*grid_distance, 2*grid_distance, 2*grid_distance, group,0,0,1,0,label,0));
+	update_connections();
+}
+
+function newFixed()
+{
+	/*
+	var read = prompt("Zustand: [0;1]");
+	var stat = parseInt(read, 10);
+
+	if(stat>1 || stat<0 || isNaN(stat))
 	{
-		objects.push(new Obj(round((random(width/2))/grid_distance+2)*grid_distance, round((random(height/2))/grid_distance+2)*grid_distance, 2*grid_distance, 2*grid_distance, group,0,0,1,0,0,0));
+		if(read!=null)
+		{
+			alert("Bitte geben Sie nur 0 oder 1 ein!");
+			newFixed();
+		}
+		return;
 	}
+	*/
+	
+	objects.push(new Obj(round((random(width/2))/grid_distance+2)*grid_distance, round((random(height/2))/grid_distance+2)*grid_distance, grid_distance, grid_distance, groups.fixed,0,0,1,0,0,0));
+	update_connections();
 }
 
 function sel(item)
