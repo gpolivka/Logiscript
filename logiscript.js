@@ -252,17 +252,44 @@ class Obj
 		}
 		draw_connections();
 	}
+	
+	analyse()
+	{
+		switch(this.type)
+		{
+			case not:
+				
+				break;
+				
+			case and:
+			
+				break;
+				
+			case or:
+			
+				break;
+				
+			case xor:
+			
+				break;
+				
+			default:
+			
+				break;
+		}
+	}
 }
 
 class Con
 {
-	constructor(x,y,obj_list=[],stat,done)
+	constructor(x,y,obj_list=[],stat,done,start_obj)
 	{
 		this.x = x;
 		this.y = y;
 		this.obj_list = obj_list;
 		this.stat = stat;
 		this.done = done;
+		this.start_obj = start_obj;
 	}
 	
 	draw()
@@ -315,14 +342,9 @@ function draw()
 		}
 		else if(o.group==groups.wire)
 		{
-			v = createVector(o.x, o.y);
-			for(i=0; i<100; i++)
+			if(pow(2*(o.y+o.h)*m.y-2*o.y*m.y+2*(o.x+o.w)*m.x-2*o.x*m.x-2*o.y*(o.y+o.h)-2*o.x*(o.x+o.w)+2*pow(o.y,2)+2*pow(o.x,2),2)-4*(pow(o.y+o.h,2)-2*o.y*(o.y+o.h)+pow(o.x+o.w,2)-2*o.x*(o.x+o.w)+pow(o.y,2)+pow(o.x,2))*(-pow(grab_tolerance*(grid_distance/5),2)+pow(m.y,2)-2*o.y*m.y+pow(m.x,2)-2*o.x*m.x+pow(o.y,2)+pow(o.x,2))>=0)
 			{
-				v.add(o.w/100, o.h/100);
-				if(p5.Vector.dist(m, v)<grab_tolerance*(grid_distance/5))
-				{
-					hover = o;
-				}
+				hover = o;
 			}
 		}
 		else if(o.group==groups.fixed)
@@ -515,7 +537,7 @@ function update_connections()
 							}
 							else if(p.group==groups.gate || p.group==groups.input || p.group==groups.output)
 							{
-								if(p.x-grid_distance==o.x && (o.y>p.y && o.y<(p.y+p.h)))
+								if(p.x-grid_distance==o.x && (o.y>p.y && o.y<(p.y+p.h)) && p.group!=groups.input)
 								{
 									found = 0;
 									for(let c of connections)
@@ -555,7 +577,7 @@ function update_connections()
 										connections.push(new_Con);
 									}
 								}
-								if(p.x-grid_distance==o.x+o.w && (o.y+o.h>p.y && o.y+o.h<(p.y+p.h)))
+								if(p.x-grid_distance==o.x+o.w && (o.y+o.h>p.y && o.y+o.h<(p.y+p.h)) && p.group!=groups.input)
 								{
 									found = 0;
 									for(let c of connections)
@@ -595,7 +617,7 @@ function update_connections()
 										connections.push(new_Con);
 									}
 								}
-								if(p.x+p.w+grid_distance==o.x && o.y==p.y+p.h/2-((p.h/grid_distance)%2)*grid_distance/2)
+								if(p.x+p.w+grid_distance==o.x && o.y==p.y+p.h/2-((p.h/grid_distance)%2)*grid_distance/2 && p.group!=groups.output)
 								{
 									found = 0;
 									for(let c of connections)
@@ -635,7 +657,7 @@ function update_connections()
 										connections.push(new_Con);
 									}
 								}
-								if(p.x+p.w+grid_distance==o.x+o.w && o.y+o.h==p.y+p.h/2-((p.h/grid_distance)%2)*grid_distance/2)
+								if(p.x+p.w+grid_distance==o.x+o.w && o.y+o.h==p.y+p.h/2-((p.h/grid_distance)%2)*grid_distance/2 && p.group!=groups.output)
 								{
 									found = 0;
 									for(let c of connections)
@@ -943,7 +965,7 @@ function analyse()
 	
 	for(let c of connections)
 	{
-		let shortcircuit = 0;//doch erst nachher prüfen?
+		let shortcircuit = 0;
 		for(let d of c.obj_list)
 		{
 			if(d.group==groups.input || d.group==groups.fixed)
@@ -960,13 +982,73 @@ function analyse()
 				}
 				c.stat = d.stat;
 				c.done = 1;
+				c.start_obj = d;
 				cycle_0.push(c);
 				shortcircuit++;
 			}
 		}
 	}
 	
-	
+	for(let c of cycle_0)
+	{
+		for(let o of c.obj_list)
+		{
+			if(o.group==groups.output)
+			{
+				o.stat = c.stat;
+			}
+			else if(o.group==groups.wire)
+			{
+				for(let d of connections)
+				{
+					if(((o.x==d.x && o.y==d.y)||(o.x+o.w==d.x && o.y+o.h==d.y)) && c!=d)
+					{
+						if(d.done==0)
+						{
+							cycle_1.push(d);
+							d.stat = c.stat;
+							d.done = 1;
+							d.start_obj = o;
+						}
+						else
+						{
+							if(shortcircuitflag==0)
+							{
+								shortcircuitflag = 1;
+								alert("Kurzschluss oder Leiterschleife!");
+								document.getElementById("alarm").style.visibility = "visible";
+							}
+							return;
+						}
+					}
+				}
+			}
+			else if(o.group==groups.gate)
+			{
+				if(o!=c.start_obj && c.x>o.x)
+				{
+					if(shortcircuitflag==0)
+					{
+						shortcircuitflag = 1;
+						alert("Kurzschluss!");
+						document.getElementById("alarm").style.visibility = "visible";
+					}
+					return;
+				}
+				for(let d of connections)
+				{
+					if(d.x==o.x+o.w+grid_distance && d.y==o.y+o.h/2-((o.h/grid_distance)%2)*grid_distance/2)
+					{
+						o.analyse();
+						cycle_1.push(d);
+						d.stat = o.stat;
+						d.done = 1;
+						d.start_obj = o;
+					}
+				}
+			}
+		}
+	}
 	
 	
 	
@@ -989,7 +1071,7 @@ function analyse()
 	if(shortcircuitflag==1)
 	{
 		shortcircuitflag = 0;
-		alert("Kurzschluss behoben!");
+		//alert("Kurzschluss behoben!");
 		document.getElementById("alarm").style.visibility = "hidden";
 	}
 }
