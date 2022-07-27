@@ -1,8 +1,6 @@
 document.addEventListener('contextmenu', event => event.preventDefault());
 window.onresize = windowResized;
 
-//HOVER FIXED
-
 const NOT = "1";
 const AND = "&";
 const OR  = "≥1";
@@ -55,9 +53,8 @@ var grid_distance_max = 50;
 var max_inputs = 16;
 var grab_tolerance = 2;
 var selected = 0;
-var cycle_0 = [];
-var cycle_1 = [];
 var shortcircuitflag = 0;
+var max_iterations = 10000;
 
 
 class Obj
@@ -121,7 +118,24 @@ class Obj
 				}
 				
 				var binary = dec2bin(this.inv);
-				stroke(undefined_color);
+				switch(this.stat)
+				{
+					case 0:
+						stroke(low_color);
+						break;
+						
+					case 1:
+						stroke(high_color);
+						break;
+						
+					case 2:
+						stroke(undefined_color);
+						break;
+						
+					default:
+					
+						break;
+				}
 				strokeWeight(grid_distance/5);
 				line(this.x+this.w+(grid_distance/5), this.y+this.h/2-((this.h/grid_distance)%2)*grid_distance/2, this.x+this.w+grid_distance, this.y+this.h/2-((this.h/grid_distance)%2)*grid_distance/2);
 				if(binary[0]=='1')
@@ -131,7 +145,32 @@ class Obj
 				}
 				for(var i=1; i<this.h/grid_distance; i++)
 				{
-					stroke(undefined_color);
+					let stat = 2;
+					for(let c of connections)
+					{
+						if(c.x==this.x-grid_distance && c.y==this.y+(i*grid_distance))
+						{
+							stat = c.stat;
+						}
+					}
+					switch(stat)
+					{
+						case 0:
+							stroke(low_color);
+							break;
+							
+						case 1:
+							stroke(high_color);
+							break;
+							
+						case 2:
+							stroke(undefined_color);
+							break;
+							
+						default:
+						
+							break;
+					}
 					strokeWeight(grid_distance/5);
 					
 					line(this.x-grid_distance, this.y+(i*grid_distance), this.x-(grid_distance/5), this.y+(i*grid_distance));
@@ -145,7 +184,24 @@ class Obj
 				break;
 			
 			case groups.wire:
-				stroke(undefined_color);
+				switch(this.stat)
+				{
+					case 0:
+						stroke(low_color);
+						break;
+						
+					case 1:
+						stroke(high_color);
+						break;
+						
+					case 2:
+						stroke(undefined_color);
+						break;
+						
+					default:
+					
+						break;
+				}
 				strokeWeight(grid_distance/5);
 				if(this.spec_1 == 1)
 				{
@@ -153,7 +209,6 @@ class Obj
 				}
 				else
 				{
-					fill(undefined_color);
 					line(this.x, this.y, this.x+this.w, this.y+this.h);
 				}
 				break;
@@ -188,7 +243,24 @@ class Obj
 
 				}
 				
-				stroke(undefined_color);
+				switch(this.stat)
+				{
+					case 0:
+						stroke(low_color);
+						break;
+						
+					case 1:
+						stroke(high_color);
+						break;
+						
+					case 2:
+						stroke(undefined_color);
+						break;
+						
+					default:
+					
+						break;
+				}
 				strokeWeight(grid_distance/5);
 				line(this.x+this.w+(grid_distance/5), this.y+this.h/2-((this.h/grid_distance)%2)*grid_distance/2, this.x+this.w+grid_distance, this.y+this.h/2-((this.h/grid_distance)%2)*grid_distance/2);
 				break;
@@ -227,7 +299,24 @@ class Obj
 					text(this.spec_1, this.x+(this.w/2)+grid_distance/4, this.y+(this.h/2)+grid_distance/2);
 				}
 				
-				stroke(undefined_color);
+				switch(this.stat)
+				{
+					case 0:
+						stroke(low_color);
+						break;
+						
+					case 1:
+						stroke(high_color);
+						break;
+						
+					case 2:
+						stroke(undefined_color);
+						break;
+						
+					default:
+					
+						break;
+				}
 				strokeWeight(grid_distance/5);
 				line(this.x-(grid_distance/5), this.y+this.h/2-((this.h/grid_distance)%2)*grid_distance/2, this.x-grid_distance, this.y+this.h/2-((this.h/grid_distance)%2)*grid_distance/2);
 				break;
@@ -241,7 +330,24 @@ class Obj
 				textAlign(CENTER, CENTER);
 				text(this.stat, this.x, this.y);
 				
-				stroke(undefined_color);
+				switch(this.stat)
+				{
+					case 0:
+						stroke(low_color);
+						break;
+						
+					case 1:
+						stroke(high_color);
+						break;
+						
+					case 2:
+						stroke(undefined_color);
+						break;
+						
+					default:
+					
+						break;
+				}
 				strokeWeight(grid_distance/5);
 				line(this.x+grid_distance/2, this.y, this.x+grid_distance, this.y);
 				break;
@@ -253,24 +359,104 @@ class Obj
 		draw_connections();
 	}
 	
-	analyse()
+	analyse(connection)
 	{
+		var binary = dec2bin(this.inv);
+		var undef = 0;
+		var inputs = [];
+		if(this.type!=types.not)
+		{
+			for(var i=1; i<this.h/grid_distance; i++)
+			{
+				for(let c of connections)
+				{
+					if(c.x==this.x-grid_distance && c.y==this.y+(i*grid_distance))
+					{
+						if(c.done==1 && c.stat!=2)
+						{
+							inputs.push(c.stat);
+						}
+						else
+						{
+							undef = 1;
+							break;
+						}
+					}
+				}
+			}
+		}
+		var sum = 0;
+		for(var i=1; i<this.h/grid_distance; i++)
+		{
+			if(i-1<binary.length && binary[binary.length-i]=='1')
+			{
+				inputs[i-1] = 1-inputs[i-1];
+			}
+			if(!isNaN(inputs[i-1]))
+			{
+				sum += inputs[i-1];
+			}
+		}
+		
 		switch(this.type)
 		{
-			case not:
-				
+			case types.not:
+				if(binary[0] != binary[binary.length-1])
+				{
+					this.stat = 1-connection.stat;
+				}
+				else
+				{
+					this.stat = connection.stat;
+				}
 				break;
 				
-			case and:
-			
+			case types.and:
+				if(sum<inputs.length)
+				{
+					this.stat = 0+parseInt(binary[0]);
+				}
+				else if(inputs.length<this.h/grid_distance-1 || undef==1)
+				{
+					this.stat = 2;
+				}
+				else
+				{
+					this.stat = 1-parseInt(binary[0]);
+				}
 				break;
 				
-			case or:
-			
+			case types.or:
+				if(sum>0)
+				{
+					this.stat = 1-parseInt(binary[0]);
+				}
+				else if(inputs.length<this.h/grid_distance-1 || undef==1)
+				{
+					this.stat = 2;
+				}
+				else
+				{
+					this.stat = 0+parseInt(binary[0]);
+				}
 				break;
 				
-			case xor:
-			
+			case types.xor:
+				if(inputs.length<this.h/grid_distance-1 || undef==1)
+				{
+					this.stat = 2;
+				}
+				else
+				{
+					if(sum%2>0)
+					{
+						this.stat = 1-parseInt(binary[0]);
+					}
+					else
+					{
+						this.stat = 0+parseInt(binary[0]);
+					}
+				}
 				break;
 				
 			default:
@@ -342,7 +528,10 @@ function draw()
 		}
 		else if(o.group==groups.wire)
 		{
-			if(pow(2*(o.y+o.h)*m.y-2*o.y*m.y+2*(o.x+o.w)*m.x-2*o.x*m.x-2*o.y*(o.y+o.h)-2*o.x*(o.x+o.w)+2*pow(o.y,2)+2*pow(o.x,2),2)-4*(pow(o.y+o.h,2)-2*o.y*(o.y+o.h)+pow(o.x+o.w,2)-2*o.x*(o.x+o.w)+pow(o.y,2)+pow(o.x,2))*(-pow(grab_tolerance*(grid_distance/5),2)+pow(m.y,2)-2*o.y*m.y+pow(m.x,2)-2*o.x*m.x+pow(o.y,2)+pow(o.x,2))>=0)
+			let tolerance = grab_tolerance*(grid_distance/5);
+			let b = createVector(o.x+o.w, o.y+o.h);
+			
+			if(pow(2*b.y*m.y-2*o.y*m.y+2*b.x*m.x-2*o.x*m.x-2*o.y*b.y-2*o.x*b.x+2*pow(o.y,2)+2*pow(o.x,2),2)-4*(pow(b.y,2)-2*o.y*b.y+pow(b.x,2)-2*o.x*b.x+pow(o.y,2)+pow(o.x,2))*(-pow(tolerance,2)+pow(m.y,2)-2*o.y*m.y+pow(m.x,2)-2*o.x*m.x+pow(o.y,2)+pow(o.x,2))>=0 && m.x>=min(o.x,b.x)-tolerance && m.x<=max(o.x,b.x)+tolerance && m.y>=min(o.y,b.y)-tolerance && m.y<=max(o.y,b.y)+tolerance)
 			{
 				hover = o;
 			}
@@ -943,23 +1132,41 @@ function update_connections()
 
 function draw_connections()
 {
-	stroke(undefined_color);
 	strokeWeight(grid_distance/5);
-	fill(undefined_color);
-	
 	for(let c of connections)
 	{
+		switch(c.stat)
+		{
+			case 0:
+				stroke(low_color);
+				fill(low_color);
+				break;
+				
+			case 1:
+				stroke(high_color);
+				fill(high_color);
+				break;
+				
+			case 2:
+				stroke(undefined_color);
+				fill(undefined_color);
+				break;
+				
+			default:
+			
+				break;
+		}
 		circle(c.x, c.y, grid_distance/4);
 	}
 }
 
 function analyse()
 {
-	cycle_0.length = 0;
-	cycle_1.length = 0;
+	var cycle_0 = [];
+	var cycle_1 = [];
 	for(let c of connections)
 	{
-		c.stat = 0;
+		c.stat = 2;
 		c.done = 0;
 	}
 	
@@ -989,78 +1196,100 @@ function analyse()
 		}
 	}
 	
-	for(let c of cycle_0)
+	while(cycle_0.length>0)
 	{
-		for(let o of c.obj_list)
+		for(let c of cycle_0)
 		{
-			if(o.group==groups.output)
+			for(let o of c.obj_list)
 			{
-				o.stat = c.stat;
-			}
-			else if(o.group==groups.wire)
-			{
-				for(let d of connections)
+				if(o.group==groups.output)
 				{
-					if(((o.x==d.x && o.y==d.y)||(o.x+o.w==d.x && o.y+o.h==d.y)) && c!=d)
+					o.stat = c.stat;
+				}
+				else if(o.group==groups.wire && o!=c.start_obj)
+				{
+					o.stat = c.stat;
+					for(let d of connections)
 					{
-						if(d.done==0)
+						if(((o.x==d.x && o.y==d.y)||(o.x+o.w==d.x && o.y+o.h==d.y)) && c!=d)
 						{
-							cycle_1.push(d);
 							d.stat = c.stat;
-							d.done = 1;
 							d.start_obj = o;
-						}
-						else
-						{
-							if(shortcircuitflag==0)
+							d.done++;
+							if(d.done>max_iterations)
 							{
-								shortcircuitflag = 1;
-								alert("Kurzschluss oder Leiterschleife!");
-								document.getElementById("alarm").style.visibility = "visible";
+								if(shortcircuitflag==0)
+								{
+									shortcircuitflag = 1;
+									alert("Instabile Schaltung!");
+									document.getElementById("alarm").style.visibility = "visible";
+								}
+								return;
 							}
-							return;
+							cycle_1.push(d);
 						}
 					}
 				}
-			}
-			else if(o.group==groups.gate)
-			{
-				if(o!=c.start_obj && c.x>o.x)
+				else if(o.group==groups.gate && o!=c.start_obj)
+				{
+					if(c.x>o.x)
+					{
+						if(shortcircuitflag==0)
+						{
+							shortcircuitflag = 1;
+							alert("Kurzschluss!");
+							document.getElementById("alarm").style.visibility = "visible";
+						}
+						return;
+					}
+					let old_stat = o.stat;
+					o.analyse(c);
+					for(let d of connections)
+					{
+						if(d.x==o.x+o.w+grid_distance && d.y==o.y+o.h/2-((o.h/grid_distance)%2)*grid_distance/2)
+						{
+							if(o.stat!=old_stat)
+							{
+								d.stat = o.stat;
+								d.start_obj = o;
+								d.done++;
+								if(d.done>max_iterations)
+								{
+									if(shortcircuitflag==0)
+									{
+										shortcircuitflag = 1;
+										alert("Instabile Schaltung!");
+										document.getElementById("alarm").style.visibility = "visible";
+									}
+									return;
+								}
+								cycle_1.push(d);
+							}
+						}
+					}
+				}
+				else if((o.group==groups.input || o.group==groups.fixed) && o!=c.start_obj)
 				{
 					if(shortcircuitflag==0)
 					{
 						shortcircuitflag = 1;
-						alert("Kurzschluss!");
+						alert("Kurzschluss oder Leiterschleife!");
 						document.getElementById("alarm").style.visibility = "visible";
 					}
 					return;
 				}
-				for(let d of connections)
-				{
-					if(d.x==o.x+o.w+grid_distance && d.y==o.y+o.h/2-((o.h/grid_distance)%2)*grid_distance/2)
-					{
-						o.analyse();
-						cycle_1.push(d);
-						d.stat = o.stat;
-						d.done = 1;
-						d.start_obj = o;
-					}
-				}
 			}
 		}
+		cycle_0.length = 0;
+		cycle_0.push.apply(cycle_0, cycle_1);
+		cycle_1.length = 0;
 	}
-	
-	
-	
-	
-	
-	
-	
 	
 	for(let c of connections)
 	{
 		if(c.done==0)
 		{
+			c.stat = 2;
 			for(d of c.obj_list)
 			{
 				d.stat = 2;
@@ -1392,7 +1621,7 @@ function newGate(type)
 	
 	if(type != types.not)
 	{
-		var read = prompt("Anzahl der Eingänge: [2;"+max_inputs+"]");
+		var read = prompt("Anzahl der Eingänge: [2;"+max_inputs+"]","2");
 		inputs = parseInt(read, 10);
 		
 		if(inputs>max_inputs || inputs<2 || isNaN(inputs))
