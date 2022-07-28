@@ -268,13 +268,23 @@ class Obj
 			case groups.output:
 				stroke(gate_stroke_color);
 				strokeWeight(grid_distance/5);
-				if(this.stat==1)
+				switch(this.stat)
 				{
-					fill(high_color);
-				}
-				else
-				{
-					fill(low_color);
+					case 0:
+						fill(low_color);
+						break;
+						
+					case 1:
+						fill(high_color);
+						break;
+						
+					case 2:
+						fill(undefined_color);
+						break;
+						
+					default:
+					
+						break;
 				}
 				rect(this.x, this.y, this.w, this.h, corner_radius);
 				fill(0);
@@ -372,7 +382,7 @@ class Obj
 				{
 					if(c.x==this.x-grid_distance && c.y==this.y+(i*grid_distance))
 					{
-						if(c.done==1 && c.stat!=2)
+						if(c.stat!=2)
 						{
 							inputs.push(c.stat);
 						}
@@ -401,7 +411,11 @@ class Obj
 		switch(this.type)
 		{
 			case types.not:
-				if(binary[0] != binary[binary.length-1])
+				if(connection.stat==2)
+				{
+					this.stat = 2;
+				}
+				else if(binary[0] != binary[binary.length-1])
 				{
 					this.stat = 1-connection.stat;
 				}
@@ -573,7 +587,7 @@ function draw()
 
 function update_connections()
 {
-	connections.length = 0;
+	var connections_new = [];
 	var found = 0;
 	var exists_p = 0;
 	var exists_o = 0;
@@ -589,7 +603,7 @@ function update_connections()
 						if(o.x+o.w+grid_distance == p.x-grid_distance && (p.y<o.y+o.h/2-((o.h/grid_distance)%2)*grid_distance/2 && p.y+p.h>o.y+o.h/2-((o.h/grid_distance)%2)*grid_distance/2))
 						{
 							found = 0;
-							for(let c of connections)
+							for(let c of connections_new)
 							{
 								if(c.x==o.x+o.w+grid_distance && c.y==o.y+o.h/2-((o.h/grid_distance)%2)*grid_distance/2)
 								{
@@ -623,7 +637,7 @@ function update_connections()
 								new_Con = new Con(o.x+o.w+grid_distance, o.y+o.h/2-((o.h/grid_distance)%2)*grid_distance/2);
 								new_Con.obj_list.push(o);
 								new_Con.obj_list.push(p);
-								connections.push(new_Con);
+								connections_new.push(new_Con);
 							}
 						}
 					}
@@ -646,7 +660,7 @@ function update_connections()
 								if((p.x==o.x && p.y==o.y) || (p.x+p.w==o.x && p.y+p.h==o.y))
 								{
 									found = 0;
-									for(let c of connections)
+									for(let c of connections_new)
 									{
 										if(c.x==o.x && c.y==o.y)
 										{
@@ -680,13 +694,13 @@ function update_connections()
 										new_Con = new Con(o.x, o.y);
 										new_Con.obj_list.push(o);
 										new_Con.obj_list.push(p);
-										connections.push(new_Con);
+										connections_new.push(new_Con);
 									}
 								}
 								if((p.x==o.x+o.w && p.y==o.y+o.h) || (p.x+p.w==o.x+o.w && p.y+p.h==o.y+o.h))
 								{
 									found = 0;
-									for(let c of connections)
+									for(let c of connections_new)
 									{
 										if(c.x==o.x+o.w && c.y==o.y+o.h)
 										{
@@ -720,7 +734,7 @@ function update_connections()
 										new_Con = new Con(o.x+o.w, o.y+o.h);
 										new_Con.obj_list.push(o);
 										new_Con.obj_list.push(p);
-										connections.push(new_Con);
+										connections_new.push(new_Con);
 									}
 								}
 							}
@@ -729,7 +743,7 @@ function update_connections()
 								if(p.x-grid_distance==o.x && (o.y>p.y && o.y<(p.y+p.h)) && p.group!=groups.input)
 								{
 									found = 0;
-									for(let c of connections)
+									for(let c of connections_new)
 									{
 										if(c.x==o.x && c.y==o.y)
 										{
@@ -763,13 +777,13 @@ function update_connections()
 										new_Con = new Con(o.x, o.y);
 										new_Con.obj_list.push(o);
 										new_Con.obj_list.push(p);
-										connections.push(new_Con);
+										connections_new.push(new_Con);
 									}
 								}
 								if(p.x-grid_distance==o.x+o.w && (o.y+o.h>p.y && o.y+o.h<(p.y+p.h)) && p.group!=groups.input)
 								{
 									found = 0;
-									for(let c of connections)
+									for(let c of connections_new)
 									{
 										if(c.x==o.x+o.w && c.y==o.y+o.h)
 										{
@@ -803,13 +817,13 @@ function update_connections()
 										new_Con = new Con(o.x+o.w, o.y+o.h);
 										new_Con.obj_list.push(o);
 										new_Con.obj_list.push(p);
-										connections.push(new_Con);
+										connections_new.push(new_Con);
 									}
 								}
 								if(p.x+p.w+grid_distance==o.x && o.y==p.y+p.h/2-((p.h/grid_distance)%2)*grid_distance/2 && p.group!=groups.output)
 								{
 									found = 0;
-									for(let c of connections)
+									for(let c of connections_new)
 									{
 										if(c.x==o.x && c.y==o.y)
 										{
@@ -843,13 +857,13 @@ function update_connections()
 										new_Con = new Con(o.x, o.y);
 										new_Con.obj_list.push(o);
 										new_Con.obj_list.push(p);
-										connections.push(new_Con);
+										connections_new.push(new_Con);
 									}
 								}
 								if(p.x+p.w+grid_distance==o.x+o.w && o.y+o.h==p.y+p.h/2-((p.h/grid_distance)%2)*grid_distance/2 && p.group!=groups.output)
 								{
 									found = 0;
-									for(let c of connections)
+									for(let c of connections_new)
 									{
 										if(c.x==o.x+o.w && c.y==o.y+o.h)
 										{
@@ -883,7 +897,7 @@ function update_connections()
 										new_Con = new Con(o.x+o.w, o.y+o.h);
 										new_Con.obj_list.push(o);
 										new_Con.obj_list.push(p);
-										connections.push(new_Con);
+										connections_new.push(new_Con);
 									}
 								}
 							}
@@ -892,7 +906,7 @@ function update_connections()
 								if(p.x+grid_distance==o.x && p.y==o.y)
 								{
 									found = 0;
-									for(let c of connections)
+									for(let c of connections_new)
 									{
 										if(c.x==o.x && c.y==o.y)
 										{
@@ -926,13 +940,13 @@ function update_connections()
 										new_Con = new Con(o.x, o.y);
 										new_Con.obj_list.push(o);
 										new_Con.obj_list.push(p);
-										connections.push(new_Con);
+										connections_new.push(new_Con);
 									}
 								}
 								if(p.x+grid_distance==o.x+o.w && p.y==o.y+o.h)
 								{
 									found = 0;
-									for(let c of connections)
+									for(let c of connections_new)
 									{
 										if(c.x==o.x+o.w && c.y==o.y+o.h)
 										{
@@ -966,7 +980,7 @@ function update_connections()
 										new_Con = new Con(o.x+o.w, o.y+o.h);
 										new_Con.obj_list.push(o);
 										new_Con.obj_list.push(p);
-										connections.push(new_Con);
+										connections_new.push(new_Con);
 									}
 								}
 							}
@@ -983,7 +997,7 @@ function update_connections()
 						if(o.x+o.w+grid_distance == p.x-grid_distance && (p.y<o.y+o.h/2-((o.h/grid_distance)%2)*grid_distance/2 && p.y+p.h>o.y+o.h/2-((o.h/grid_distance)%2)*grid_distance/2))
 						{
 							found = 0;
-							for(let c of connections)
+							for(let c of connections_new)
 							{
 								if(c.x==o.x+o.w+grid_distance && c.y==o.y+o.h/2-((o.h/grid_distance)%2)*grid_distance/2)
 								{
@@ -1017,7 +1031,7 @@ function update_connections()
 								new_Con = new Con(o.x+o.w+grid_distance, o.y+o.h/2-((o.h/grid_distance)%2)*grid_distance/2);
 								new_Con.obj_list.push(o);
 								new_Con.obj_list.push(p);
-								connections.push(new_Con);
+								connections_new.push(new_Con);
 							}
 						}
 					}
@@ -1032,7 +1046,7 @@ function update_connections()
 						if(o.x-grid_distance==p.x+p.w+grid_distance && o.y+grid_distance==p.y+p.h/2-((p.h/grid_distance)%2)*grid_distance/2)
 						{
 							found = 0;
-							for(let c of connections)
+							for(let c of connections_new)
 							{
 								if(c.x==o.x-grid_distance && c.y==o.y+o.h/2-((o.h/grid_distance)%2)*grid_distance/2)
 								{
@@ -1066,7 +1080,7 @@ function update_connections()
 								new_Con = new Con(o.x-grid_distance, o.y+o.h/2-((o.h/grid_distance)%2)*grid_distance/2);
 								new_Con.obj_list.push(o);
 								new_Con.obj_list.push(p);
-								connections.push(new_Con);
+								connections_new.push(new_Con);
 							}
 						}
 					}
@@ -1081,7 +1095,7 @@ function update_connections()
 						if(o.x+grid_distance==p.x-grid_distance && (o.y>p.y && o.y<(p.y+p.h)))
 						{
 							found = 0;
-							for(let c of connections)
+							for(let c of connections_new)
 							{
 								if(c.x==o.x+grid_distance && c.y==o.y)
 								{
@@ -1115,7 +1129,7 @@ function update_connections()
 								new_Con = new Con(o.x+grid_distance, o.y);
 								new_Con.obj_list.push(o);
 								new_Con.obj_list.push(p);
-								connections.push(new_Con);
+								connections_new.push(new_Con);
 							}
 						}
 					}
@@ -1127,6 +1141,28 @@ function update_connections()
 				break;
 		}
 	}
+	
+	found = 0;
+	for(let c of connections_new)
+	{
+		for(let d of connections)
+		{
+			if(c.x==d.x && c.y==d.y)
+			{
+				c.stat = d.stat;
+				found = 1;
+			}
+		}
+		if(found==0)
+		{
+			c.stat = 2;
+		}
+	}
+	
+	connections.length = 0;
+	connections.push.apply(connections, connections_new);
+	connections_new.length = 0;
+	
 	analyse();
 }
 
@@ -1166,7 +1202,6 @@ function analyse()
 	var cycle_1 = [];
 	for(let c of connections)
 	{
-		c.stat = 2;
 		c.done = 0;
 	}
 	
@@ -1196,6 +1231,7 @@ function analyse()
 		}
 	}
 	
+	let steady_state = 0;
 	while(cycle_0.length>0)
 	{
 		for(let c of cycle_0)
@@ -1237,18 +1273,17 @@ function analyse()
 						if(shortcircuitflag==0)
 						{
 							shortcircuitflag = 1;
-							alert("Kurzschluss!");
+							alert("Kurzschluss oder Leiterschleife!");
 							document.getElementById("alarm").style.visibility = "visible";
 						}
 						return;
 					}
-					let old_stat = o.stat;
 					o.analyse(c);
 					for(let d of connections)
 					{
-						if(d.x==o.x+o.w+grid_distance && d.y==o.y+o.h/2-((o.h/grid_distance)%2)*grid_distance/2)
+						if(d.stat!=o.stat | steady_state==0)
 						{
-							if(o.stat!=old_stat)
+							if(d.x==o.x+o.w+grid_distance && d.y==o.y+o.h/2-((o.h/grid_distance)%2)*grid_distance/2)
 							{
 								d.stat = o.stat;
 								d.start_obj = o;
@@ -1280,6 +1315,24 @@ function analyse()
 				}
 			}
 		}
+		
+		steady_state = 0;
+		for(let c of cycle_1)
+		{
+			if(c.done>1)
+			{
+				steady_state++;
+			}
+		}
+		if(steady_state>=cycle_1.length)
+		{
+			steady_state = 1;
+		}
+		else
+		{
+			steady_state = 0;
+		}
+		
 		cycle_0.length = 0;
 		cycle_0.push.apply(cycle_0, cycle_1);
 		cycle_1.length = 0;
@@ -1290,9 +1343,31 @@ function analyse()
 		if(c.done==0)
 		{
 			c.stat = 2;
-			for(d of c.obj_list)
+			for(let o of c.obj_list)
 			{
-				d.stat = 2;
+				o.stat = 2;
+			}
+		}
+	}
+	
+	var found = 0;
+	for(let o of objects)
+	{
+		if(o.group!=groups.input && o.group!=groups.fixed)
+		{
+			for(let c of connections)
+			{
+				for(let d of c.obj_list)
+				{
+					if(d==o)
+					{
+						found = 1;
+					}
+				}
+			}
+			if(found==0)
+			{
+				o.stat = 2;
 			}
 		}
 	}
@@ -1409,8 +1484,8 @@ function mouseReleased()
 		grabbed.y = round(grabbed.y/grid_distance)*grid_distance;
 		grabbed.draw();
 		grabbed = null;
-		update_connections();
 	}
+	update_connections();
 }
 
 function mouseDragged()
@@ -1545,6 +1620,11 @@ function translate_func(x, y)
 		o.x -= x*grid_distance;
 		o.y -= y*grid_distance;
 	}
+	for(let c of connections)
+	{
+		c.x -= x*grid_distance;
+		c.y -= y*grid_distance;
+	}
 	update_connections();
 }
 
@@ -1653,8 +1733,14 @@ function newInOut(group)
 			label++;
 		}
 	}
+
+	let stat = 2;
+	if(group==groups.input)
+	{
+		stat = 1;
+	}
 	
-	objects.push(new Obj(round((random(width/2))/grid_distance+2)*grid_distance, round((random(height/2))/grid_distance+2)*grid_distance, 2*grid_distance, 2*grid_distance, group,0,0,1,0,label,0));
+	objects.push(new Obj(round((random(width/2))/grid_distance+2)*grid_distance, round((random(height/2))/grid_distance+2)*grid_distance, 2*grid_distance, 2*grid_distance, group,0,0,stat,0,label,0));
 	update_connections();
 }
 
