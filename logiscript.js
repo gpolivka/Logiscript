@@ -22,14 +22,17 @@ const groups = {
 	gate: 1,
 	input: 2,
 	output: 3,
-	fixed: 4
+	fixed: 4,
+	zff: 5
 }
 
 const types = {
 	not: 0,
 	and: 1,
 	or:  2,
-	xor: 3
+	xor: 3,
+	jk: 4,
+	d: 5
 }
 
 
@@ -55,6 +58,8 @@ var grab_tolerance = 2;
 var selected = 0;
 var shortcircuitflag = 0;
 var max_iterations = 10000;
+var max_file_length = 100000;
+var disable_event_flag = 0;
 
 
 class Obj
@@ -113,7 +118,7 @@ class Obj
 						break;
 					
 					default:
-					
+						alert("Fehler: Unbekannter Gate-Typ!");
 						break;
 				}
 				
@@ -133,7 +138,7 @@ class Obj
 						break;
 						
 					default:
-					
+						alert("Fehler: Unbekannter Zustand!");
 						break;
 				}
 				strokeWeight(grid_distance/5);
@@ -168,7 +173,7 @@ class Obj
 							break;
 							
 						default:
-						
+							alert("Fehler: Unbekannter Zustand!");
 							break;
 					}
 					strokeWeight(grid_distance/5);
@@ -199,7 +204,7 @@ class Obj
 						break;
 						
 					default:
-					
+						alert("Fehler: Unbekannter Zustand!");
 						break;
 				}
 				strokeWeight(grid_distance/5);
@@ -258,7 +263,7 @@ class Obj
 						break;
 						
 					default:
-					
+						alert("Fehler: Unbekannter Zustand!");
 						break;
 				}
 				strokeWeight(grid_distance/5);
@@ -283,7 +288,7 @@ class Obj
 						break;
 						
 					default:
-					
+						alert("Fehler: Unbekannter Zustand!");
 						break;
 				}
 				rect(this.x, this.y, this.w, this.h, corner_radius);
@@ -324,7 +329,7 @@ class Obj
 						break;
 						
 					default:
-					
+						alert("Fehler: Unbekannter Zustand!");
 						break;
 				}
 				strokeWeight(grid_distance/5);
@@ -355,15 +360,158 @@ class Obj
 						break;
 						
 					default:
-					
+						alert("Fehler: Unbekannter Zustand!");
 						break;
 				}
 				strokeWeight(grid_distance/5);
 				line(this.x+grid_distance/2, this.y, this.x+grid_distance, this.y);
 				break;
+				
+			case groups.zff:
+				stroke(gate_stroke_color);
+				strokeWeight(grid_distance/5);
+				rect(this.x, this.y, this.w, this.h, corner_radius);
+				fill(0);
+				
+				stroke(gate_color);
+				textSize(grid_distance);
+				textFont('Arial');
+				textStyle(BOLD);
+				textAlign(CENTER, CENTER);
+				text("Z", this.x+(this.w/2), this.y+(this.h/2));
+				
+				for(var i=1; i<this.h/grid_distance; i++)
+				{
+					let stat = 2;
+					for(let c of connections)
+					{
+						if(c.x==this.x+this.w+grid_distance && c.y==this.y+(i*grid_distance))
+						{
+							stat = c.stat;
+						}
+					}
+					switch(stat)
+					{
+						case 0:
+							stroke(low_color);
+							break;
+							
+						case 1:
+							stroke(high_color);
+							break;
+							
+						case 2:
+							stroke(undefined_color);
+							break;
+							
+						default:
+							alert("Fehler: Unbekannter Zustand!");
+							break;
+					}
+					strokeWeight(grid_distance/5);
+					line(this.x+this.w+grid_distance/5, this.y+(i*grid_distance), this.x+this.w+grid_distance, this.y+(i*grid_distance));
+					
+					strokeWeight(grid_distance/10);
+					stroke(gate_color);
+					textSize(grid_distance*0.75);
+					textFont('Arial');
+					textStyle(BOLD);
+					textAlign(RIGHT, CENTER);
+					if(this.type==types.d)
+					{
+						text("D", this.x+25*(this.w/32)+grid_distance/4, this.y+(i*grid_distance));
+						textSize(grid_distance*0.75/2);
+						textAlign(LEFT, CENTER);
+						text(i, this.x+25*(this.w/32)+grid_distance/4, this.y+(i*grid_distance)+grid_distance*0.75/2);
+					}
+					else if(this.type==types.jk)
+					{
+						if(i%2==1)
+						{
+							text("J", this.x+25*(this.w/32)+grid_distance/4, this.y+(i*grid_distance));
+						}
+						else
+						{
+							text("K", this.x+25*(this.w/32)+grid_distance/4, this.y+(i*grid_distance));
+						}
+						textSize(grid_distance*0.75/2);
+						textAlign(LEFT, CENTER);
+						text(round(i/2), this.x+25*(this.w/32)+grid_distance/4, this.y+(i*grid_distance)+grid_distance*0.75/2);
+					}
+					
+					if(this.type==types.jk && i%2==1)
+					{
+						switch(this.stat[floor(i/2)])
+						{
+							case 0:
+								stroke(low_color);
+								break;
+								
+							case 1:
+								stroke(high_color);
+								break;
+								
+							case 2:
+								stroke(undefined_color);
+								break;
+								
+							default:
+								alert("Fehler: Unbekannter Zustand!");
+								break;
+						}
+						strokeWeight(grid_distance/5);
+						line(this.x-grid_distance/5, this.y+(i*grid_distance), this.x-grid_distance, this.y+(i*grid_distance));
+						
+						strokeWeight(grid_distance/10);
+						stroke(gate_color);
+						textSize(grid_distance*0.75);
+						textFont('Arial');
+						textStyle(BOLD);
+						textAlign(RIGHT, CENTER);
+						text("Q", this.x+3*(this.w/16)+grid_distance/4, this.y+(i*grid_distance));
+						textSize(grid_distance*0.75/2);
+						textAlign(LEFT, CENTER);
+						text(ceil(i/2), this.x+3*(this.w/16)+grid_distance/4, this.y+(i*grid_distance)+grid_distance*0.75/2);
+					}
+					else if(this.type==types.d)
+					{
+						switch(this.stat[i-1])
+						{
+							case 0:
+								stroke(low_color);
+								break;
+								
+							case 1:
+								stroke(high_color);
+								break;
+								
+							case 2:
+								stroke(undefined_color);
+								break;
+								
+							default:
+								alert("Fehler: Unbekannter Zustand!");
+								break;
+						}
+						strokeWeight(grid_distance/5);
+						line(this.x-grid_distance/5, this.y+(i*grid_distance), this.x-grid_distance, this.y+(i*grid_distance));
+						
+						strokeWeight(grid_distance/10);
+						stroke(gate_color);
+						textSize(grid_distance*0.75);
+						textFont('Arial');
+						textStyle(BOLD);
+						textAlign(RIGHT, CENTER);
+						text("Q", this.x+3*(this.w/16)+grid_distance/4, this.y+(i*grid_distance));
+						textSize(grid_distance*0.75/2);
+						textAlign(LEFT, CENTER);
+						text(i, this.x+3*(this.w/16)+grid_distance/4, this.y+(i*grid_distance)+grid_distance*0.75/2);
+					}
+				}
+				break;
 			
 			default:
-			
+				alert("Fehler: Unbekannte Objekt-Gruppe!");
 				break;
 		}
 		draw_connections();
@@ -474,7 +622,7 @@ class Obj
 				break;
 				
 			default:
-			
+				alert("Fehler: Unbekannter Gate-Typ!");
 				break;
 		}
 	}
@@ -509,6 +657,12 @@ function setup()
 	frameRate(24);
 	
 	strokeCap(PROJECT);
+	
+	
+	//TESTTESTTEST##########################################
+	let stat = [0,1,2,1];
+	objects.push(new Obj(2*grid_distance, 2*grid_distance, 3*grid_distance, 5*grid_distance, groups.zff,types.jk,0,stat,0,0,0));
+	//TESTTESTTEST##########################################
 }
 
 function windowResized()
@@ -533,7 +687,7 @@ function draw()
 	hover = null;
 	for(let o of objects)
 	{
-		if(o.group==groups.gate || o.group==groups.input || o.group==groups.output)
+		if(o.group==groups.gate || o.group==groups.input || o.group==groups.output || o.group==groups.zff)
 		{
 			if(m.x>o.x-grab_tolerance*(grid_distance/5) && m.x<o.x+o.w+grab_tolerance*(grid_distance/5) && m.y>o.y-grab_tolerance*(grid_distance/5) && m.y<o.y+o.h+grab_tolerance*(grid_distance/5))
 			{
@@ -984,6 +1138,205 @@ function update_connections()
 									}
 								}
 							}
+							
+							
+							
+							
+							
+							
+							
+							
+							//HIER WEITERMACHEN
+							else if(p.group==groups.zff)
+							{
+								if(p.x-grid_distance==o.x && o.y>p.y && o.y<(p.y+p.h))
+								{
+									found = 0;
+									for(let c of connections_new)
+									{
+										if(c.x==o.x && c.y==o.y)
+										{
+											exists_p = 0;
+											exists_o = 0;
+											for(let d of c.obj_list)
+											{
+												if(d==o)
+												{
+													exists_o = 1;
+												}
+												else if(d==p)
+												{
+													exists_p = 1;
+												}
+											}
+											
+											if(exists_p==0)
+											{
+												c.obj_list.push(p);
+											}
+											if(exists_o==0)
+											{
+												c.obj_list.push(o);
+											}
+											found = 1;
+										}
+									}
+									if(found==0)
+									{
+										new_Con = new Con(o.x, o.y);
+										new_Con.obj_list.push(o);
+										new_Con.obj_list.push(p);
+										connections_new.push(new_Con);
+									}
+								}
+								if(p.x-grid_distance==o.x+o.w && o.y+o.h>p.y && o.y+o.h<(p.y+p.h))
+								{
+									found = 0;
+									for(let c of connections_new)
+									{
+										if(c.x==o.x+o.w && c.y==o.y+o.h)
+										{
+											exists_p = 0;
+											exists_o = 0;
+											for(let d of c.obj_list)
+											{
+												if(d==o)
+												{
+													exists_o = 1;
+												}
+												else if(d==p)
+												{
+													exists_p = 1;
+												}
+											}
+											
+											if(exists_p==0)
+											{
+												c.obj_list.push(p);
+											}
+											if(exists_o==0)
+											{
+												c.obj_list.push(o);
+											}
+											found = 1;
+										}
+									}
+									if(found==0)
+									{
+										new_Con = new Con(o.x+o.w, o.y+o.h);
+										new_Con.obj_list.push(o);
+										new_Con.obj_list.push(p);
+										connections_new.push(new_Con);
+									}
+								}
+								if(p.x+p.w+grid_distance==o.x && o.y==p.y+p.h/2-((p.h/grid_distance)%2)*grid_distance/2)
+								{
+									found = 0;
+									for(let c of connections_new)
+									{
+										if(c.x==o.x && c.y==o.y)
+										{
+											exists_p = 0;
+											exists_o = 0;
+											for(let d of c.obj_list)
+											{
+												if(d==o)
+												{
+													exists_o = 1;
+												}
+												else if(d==p)
+												{
+													exists_p = 1;
+												}
+											}
+											
+											if(exists_p==0)
+											{
+												c.obj_list.push(p);
+											}
+											if(exists_o==0)
+											{
+												c.obj_list.push(o);
+											}
+											found = 1;
+										}
+									}
+									if(found==0)
+									{
+										new_Con = new Con(o.x, o.y);
+										new_Con.obj_list.push(o);
+										new_Con.obj_list.push(p);
+										connections_new.push(new_Con);
+									}
+								}
+								if(p.x+p.w+grid_distance==o.x+o.w && o.y+o.h==p.y+p.h/2-((p.h/grid_distance)%2)*grid_distance/2)
+								{
+									found = 0;
+									for(let c of connections_new)
+									{
+										if(c.x==o.x+o.w && c.y==o.y+o.h)
+										{
+											exists_p = 0;
+											exists_o = 0;
+											for(let d of c.obj_list)
+											{
+												if(d==o)
+												{
+													exists_o = 1;
+												}
+												else if(d==p)
+												{
+													exists_p = 1;
+												}
+											}
+											
+											if(exists_p==0)
+											{
+												c.obj_list.push(p);
+											}
+											if(exists_o==0)
+											{
+												c.obj_list.push(o);
+											}
+											found = 1;
+										}
+									}
+									if(found==0)
+									{
+										new_Con = new Con(o.x+o.w, o.y+o.h);
+										new_Con.obj_list.push(o);
+										new_Con.obj_list.push(p);
+										connections_new.push(new_Con);
+									}
+								}
+							}
+							
+							
+							
+							
+							
+							
+							
+							
+							
+							
+							
+							
+							
+							
+							
+							
+							
+							
+							
+							
+							
+							
+							
+							
+							
+							
+							
 						}
 					}
 				}
@@ -1136,8 +1489,12 @@ function update_connections()
 				}
 				break;
 				
-			default:
+			case groups.zff:
 			
+				break;
+				
+			default:
+				alert("Fehler: Unbekannte Objekt-Gruppe!");
 				break;
 		}
 	}
@@ -1189,7 +1546,7 @@ function draw_connections()
 				break;
 				
 			default:
-			
+				alert("Fehler: Unbekannter Zustand!");
 				break;
 		}
 		circle(c.x, c.y, grid_distance/4);
@@ -1345,7 +1702,10 @@ function analyse()
 			c.stat = 2;
 			for(let o of c.obj_list)
 			{
-				o.stat = 2;
+				if(o.group!=groups.zff)
+				{
+					o.stat = 2;
+				}
 			}
 		}
 	}
@@ -1365,7 +1725,7 @@ function analyse()
 					}
 				}
 			}
-			if(found==0)
+			if(found==0 && o.group!=groups.zff)
 			{
 				o.stat = 2;
 			}
@@ -1382,6 +1742,11 @@ function analyse()
 
 function mousePressed()
 {
+	if(disable_event_flag==1)
+	{
+		return;
+	}
+	
 	var not_flag = 0;
 	if(hover)
 	{
@@ -1428,7 +1793,7 @@ function mousePressed()
 				grabbed = hover;
 			}
 		}
-		else
+		else if(hover.erase==0)
 		{
 			objects.splice(objects.indexOf(hover), 1);
 		}
@@ -1467,6 +1832,11 @@ function mousePressed()
 
 function mouseReleased()
 {
+	if(disable_event_flag==1)
+	{
+		return;
+	}
+	
 	if(grabbed)
 	{
 		if((grabbed.group==groups.input || grabbed.group==groups.fixed) && grabbed.x==round(grabbed.x/grid_distance)*grid_distance && grabbed.y==round(grabbed.y/grid_distance)*grid_distance)
@@ -1490,19 +1860,36 @@ function mouseReleased()
 
 function mouseDragged()
 {
+	if(disable_event_flag==1)
+	{
+		return;
+	}
+	
 	if (grabbed)
 	{
 		grabbed.x += movedX;
 		grabbed.y += movedY;
-		update_connections(); //evtl. weglassen falls zu langsam
+		update_connections(); //eventl. weglassen falls zu langsam
 	}
 }
 
 function keyPressed()
 {
+	if(disable_event_flag==1)
+	{
+		if(getComputedStyle(input_form).getPropertyValue('visibility')=="visible" && keyCode==ESCAPE)
+		{
+			document.getElementById("input_form").reset();
+			document.getElementById("input_form").style.visibility = "hidden";
+			document.getElementById("div_simulation").style.visibility = "visible";
+			disable_event_flag = 0;
+		}
+		return;
+	}
+	
 	if(hover)
 	{
-		if(keyCode == DELETE)
+		if(keyCode==DELETE && hover.erase==0)
 		{
 			objects.splice(objects.indexOf(hover), 1);
 		}
@@ -1541,6 +1928,11 @@ function keyPressed()
 
 function keyTyped()
 {
+	if(disable_event_flag==1)
+	{
+		return;
+	}
+	
 	switch(key)
 	{
 		case 'n':
@@ -1781,19 +2173,116 @@ function sel(item)
 			break;
 			
 		default:
-		
+			alert(unescape("Fehler%3A Ung%FCltiges Argument"));
 			break;
 	}
 }
 
-function load_circuit()
+function load_circuit(arg)
 {
-	alert("Laden einer Schaltung aus Textdatei");
+	if(arg==0)
+	{
+		document.getElementById("input_form").style.visibility = "visible";
+		document.getElementById("div_simulation").style.visibility = "hidden";
+		disable_event_flag = 1;
+	}
+	else if(arg==1)
+	{
+		objects.length = 0;
+		zoom_func(-zoom);
+		translate_func(-trans_x, -trans_y);
+		
+		let text = document.forms["input_form"].elements["text"].value;
+		if(text[text.length-1]!=';')
+		{
+			alert("Schaltung ungültig!");
+			return;
+		}
+		let objs = text.split(';');
+		for(let i=0; i<objs.length-1; i++)
+		{
+			let properties = objs[i].split(',');
+			if(properties.length!=11)
+			{
+				alert("Schaltung ungültig!");
+				return;
+			}
+			objects.push(new Obj(parseInt(properties[0]), parseInt(properties[1]), parseInt(properties[2]), parseInt(properties[3]), parseInt(properties[4]), parseInt(properties[5]), parseInt(properties[6]), parseInt(properties[7]), parseInt(properties[8]), parseInt(properties[9]), parseInt(properties[10])));
+		}
+		document.getElementById("input_form").reset();
+		document.getElementById("input_form").style.visibility = "hidden";
+		document.getElementById("div_simulation").style.visibility = "visible";
+		disable_event_flag = 0;
+		update_connections();
+		view_fit();
+	}
 }
+
+document.forms["input_form"].elements["input_file"].onchange = function(event)
+{
+	var reader = new FileReader();
+	reader.onload = function(event)
+	{
+		if(event.target.readyState != 2)
+		{
+			return;
+		}
+		if(event.target.error)
+		{
+			alert("Fehler beim Einlesen!");
+			return;
+		}
+		filecontent = event.target.result;
+		if(event.target.result.length>max_file_length)
+		{
+			alert("Datei ist zu groß!");
+			return;
+		}
+		document.forms["input_form"].elements["text"].value = event.target.result;
+	};
+	reader.readAsText(event.target.files[0]);
+};
 
 function save_circuit()
 {
-	alert("Speichern einer Schaltung in Textdatei");
+	let text = "";
+	
+	for(let o of objects)
+	{
+		text = text.concat(o.x,",",o.y,",",o.w,",",o.h,",",o.group,",",o.type,",",o.inv,",",o.stat,",",o.erase,",",o.spec_1,",",o.spec_2,";");
+	}
+	
+	var myBlob = new Blob([text], {type: "text/plain"});
+	var url = window.URL.createObjectURL(myBlob);
+	var anchor = document.createElement("a");
+	anchor.href = url;
+	anchor.download = "Circuit.txt";
+	anchor.click();
+	window.URL.revokeObjectURL(url);
+	document.removeChild(anchor);
+}
+
+function clear_circuit()
+{
+	if (confirm("Wollen Sie die Schaltung wirklich löschen?"))
+	{
+		var erase_objs = [];
+		for(let o of objects)
+		{
+			if(o.erase==1)
+			{
+				erase_objs.push(o);
+			}
+		}
+		objects.length = 0;
+		for(let o of erase_objs)
+		{
+			objects.push(o);
+		}
+		
+		update_connections();
+		view_fit();
+	}
 }
 
 function manual()
