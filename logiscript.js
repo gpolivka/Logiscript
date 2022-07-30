@@ -47,6 +47,7 @@ var hover;
 var wired;
 var objects = [];
 var connections = [];
+var connections_new = [];
 var corner_radius = 2;
 var trans_x = 0;
 var trans_y = 0;
@@ -69,6 +70,7 @@ class Obj
 	//input:	spec_1 = label		spec_2 = ###
 	//output:	spec_1 = label		spec_2 = ###
 	//fixed:	spec_1 = ###		spec_2 = ###
+	//zff:		spec_1 = clk_old	spec_2 = ###
 	constructor(x,y,w,h,group,type,inv,stat,erase,spec_1,spec_2)
 	{
 		this.x = x;
@@ -371,6 +373,10 @@ class Obj
 				stroke(gate_stroke_color);
 				strokeWeight(grid_distance/5);
 				rect(this.x, this.y, this.w, this.h, corner_radius);
+				strokeCap(ROUND);
+				line(this.x+this.w*11/32, this.y+this.h, this.x+this.w/2, this.y+this.h-this.w*5/32);
+				line(this.x+this.w*21/32, this.y+this.h, this.x+this.w/2, this.y+this.h-this.w*5/32);
+				strokeCap(PROJECT);
 				fill(0);
 				
 				stroke(gate_color);
@@ -380,9 +386,38 @@ class Obj
 				textAlign(CENTER, CENTER);
 				text("Z", this.x+(this.w/2), this.y+(this.h/2));
 				
+				let stat = 2;
+				for(let c of connections)
+				{
+					if(c.x==this.x+this.w/2 && c.y==this.y+this.h+grid_distance)
+					{
+						stat = c.stat;
+					}
+				}
+				switch(stat)
+				{
+					case 0:
+						stroke(low_color);
+						break;
+						
+					case 1:
+						stroke(high_color);
+						break;
+						
+					case 2:
+						stroke(undefined_color);
+						break;
+						
+					default:
+						alert("Fehler: Unbekannter Zustand!");
+						break;
+				}
+				strokeWeight(grid_distance/5);
+				line(this.x+this.w/2, this.y+this.h+grid_distance/5, this.x+this.w/2, this.y+this.h+grid_distance);
+				
 				for(var i=1; i<this.h/grid_distance; i++)
 				{
-					let stat = 2;
+					stat = 2;
 					for(let c of connections)
 					{
 						if(c.x==this.x+this.w+grid_distance && c.y==this.y+(i*grid_distance))
@@ -419,24 +454,24 @@ class Obj
 					textAlign(RIGHT, CENTER);
 					if(this.type==types.d)
 					{
-						text("D", this.x+25*(this.w/32)+grid_distance/4, this.y+(i*grid_distance));
+						text("D", this.x+13*(this.w/16)+grid_distance/4, this.y+(i*grid_distance));
 						textSize(grid_distance*0.75/2);
 						textAlign(LEFT, CENTER);
-						text(i, this.x+25*(this.w/32)+grid_distance/4, this.y+(i*grid_distance)+grid_distance*0.75/2);
+						text(i, this.x+13*(this.w/16)+grid_distance/4, this.y+(i*grid_distance)+grid_distance*0.75/2);
 					}
 					else if(this.type==types.jk)
 					{
 						if(i%2==1)
 						{
-							text("J", this.x+25*(this.w/32)+grid_distance/4, this.y+(i*grid_distance));
+							text("J", this.x+13*(this.w/16)+grid_distance/4, this.y+(i*grid_distance));
 						}
 						else
 						{
-							text("K", this.x+25*(this.w/32)+grid_distance/4, this.y+(i*grid_distance));
+							text("K", this.x+13*(this.w/16)+grid_distance/4, this.y+(i*grid_distance));
 						}
 						textSize(grid_distance*0.75/2);
 						textAlign(LEFT, CENTER);
-						text(round(i/2), this.x+25*(this.w/32)+grid_distance/4, this.y+(i*grid_distance)+grid_distance*0.75/2);
+						text(round(i/2), this.x+13*(this.w/16)+grid_distance/4, this.y+(i*grid_distance)+grid_distance*0.75/2);
 					}
 					
 					if(this.type==types.jk && i%2==1)
@@ -468,10 +503,10 @@ class Obj
 						textFont('Arial');
 						textStyle(BOLD);
 						textAlign(RIGHT, CENTER);
-						text("Q", this.x+3*(this.w/16)+grid_distance/4, this.y+(i*grid_distance));
+						text("Q", this.x+5*(this.w/32)+grid_distance/4, this.y+(i*grid_distance));
 						textSize(grid_distance*0.75/2);
 						textAlign(LEFT, CENTER);
-						text(ceil(i/2), this.x+3*(this.w/16)+grid_distance/4, this.y+(i*grid_distance)+grid_distance*0.75/2);
+						text(ceil(i/2), this.x+5*(this.w/32)+grid_distance/4, this.y+(i*grid_distance)+grid_distance*0.75/2);
 					}
 					else if(this.type==types.d)
 					{
@@ -519,7 +554,6 @@ class Obj
 	
 	analyse(connection)
 	{
-		var binary = dec2bin(this.inv);
 		var undef = 0;
 		var inputs = [];
 		if(this.type!=types.not)
@@ -528,7 +562,7 @@ class Obj
 			{
 				for(let c of connections)
 				{
-					if(c.x==this.x-grid_distance && c.y==this.y+(i*grid_distance))
+					if(((c.x==this.x-grid_distance && this.group==groups.gate) || (c.x==this.x+this.w+grid_distance && this.group==groups.zff)) && c.y==this.y+(i*grid_distance))
 					{
 						if(c.stat!=2)
 						{
@@ -543,16 +577,20 @@ class Obj
 				}
 			}
 		}
-		var sum = 0;
-		for(var i=1; i<this.h/grid_distance; i++)
+		if(this.group==groups.gate)
 		{
-			if(i-1<binary.length && binary[binary.length-i]=='1')
+			var binary = dec2bin(this.inv);
+			var sum = 0;
+			for(var i=1; i<this.h/grid_distance; i++)
 			{
-				inputs[i-1] = 1-inputs[i-1];
-			}
-			if(!isNaN(inputs[i-1]))
-			{
-				sum += inputs[i-1];
+				if(i-1<binary.length && binary[binary.length-i]=='1')
+				{
+					inputs[i-1] = 1-inputs[i-1];
+				}
+				if(!isNaN(inputs[i-1]))
+				{
+					sum += inputs[i-1];
+				}
 			}
 		}
 		
@@ -621,8 +659,66 @@ class Obj
 				}
 				break;
 				
+			case types.jk:
+				if(inputs.length<this.h/grid_distance-1 || undef==1)
+				{
+					alert("Zustand von mindestens einem Vorbereitungseingang undefiniert!");
+					for(let i=0; i<this.stat.length; i++)
+					{
+						this.stat[i] = 2;
+					}
+				}
+				else
+				{
+					for(let i=0; i<inputs.length-1; i=i+2)
+					{
+						if(inputs[i]==1 && inputs[i+1]==0)
+						{
+							this.stat[i/2] = 1;
+						}
+						else if(inputs[i]==0 && inputs[i+1]==1)
+						{
+							this.stat[i/2] = 0;
+						}
+						else if(inputs[i]==1 && inputs[i+1]==1)
+						{
+							if(this.stat[i/2]==0)
+							{
+								this.stat[i/2] = 1;
+							}
+							else if(this.stat[i/2]==1)
+							{
+								this.stat[i/2] =0;
+							}
+							else
+							{
+								this.stat[i/2] = 2;
+							}
+						}
+					}
+				}
+				break;
+				
+			case types.d:
+				if(inputs.length<this.h/grid_distance-1 || undef==1)
+				{
+					alert("Zustand von mindestens einem Vorbereitungseingang undefiniert!");
+					for(let i=0; i<this.stat.length; i++)
+					{
+						this.stat[i] = 2;
+					}
+				}
+				else
+				{
+					for(let i=0; i<inputs.length; i++)
+					{
+						this.stat[i] = inputs[i];
+					}
+				}
+				break;
+				
 			default:
-				alert("Fehler: Unbekannter Gate-Typ!");
+				alert("Fehler: Unbekannter Gate- oder Z-Typ!");
 				break;
 		}
 	}
@@ -660,8 +756,8 @@ function setup()
 	
 	
 	//TESTTESTTEST##########################################
-	let stat = [0,1,2,1];
-	objects.push(new Obj(2*grid_distance, 2*grid_distance, 3*grid_distance, 5*grid_distance, groups.zff,types.jk,0,stat,0,0,0));
+	objects.push(new Obj(10*grid_distance, 15*grid_distance, 4*grid_distance, 7*grid_distance, groups.zff,types.jk,0,new Array(2,2,2),0,0,0));
+	objects.push(new Obj(10*grid_distance, 2*grid_distance, 4*grid_distance, 7*grid_distance, groups.zff,types.d,0,new Array(2,2,2,2,2,2),0,0,0));
 	//TESTTESTTEST##########################################
 }
 
@@ -741,8 +837,7 @@ function draw()
 
 function update_connections()
 {
-	var connections_new = [];
-	var found = 0;
+	connections_new.length = 0;
 	var exists_p = 0;
 	var exists_o = 0;
 	for(let o of objects)
@@ -756,43 +851,7 @@ function update_connections()
 					{
 						if(o.x+o.w+grid_distance == p.x-grid_distance && (p.y<o.y+o.h/2-((o.h/grid_distance)%2)*grid_distance/2 && p.y+p.h>o.y+o.h/2-((o.h/grid_distance)%2)*grid_distance/2))
 						{
-							found = 0;
-							for(let c of connections_new)
-							{
-								if(c.x==o.x+o.w+grid_distance && c.y==o.y+o.h/2-((o.h/grid_distance)%2)*grid_distance/2)
-								{
-									exists_p = 0;
-									exists_o = 0;
-									for(let d of c.obj_list)
-									{
-										if(d==o)
-										{
-											exists_o = 1;
-										}
-										else if(d==p)
-										{
-											exists_p = 1;
-										}
-									}
-									
-									if(exists_p==0)
-									{
-										c.obj_list.push(p);
-									}
-									if(exists_o==0)
-									{
-										c.obj_list.push(o);
-									}
-									found = 1;
-								}
-							}
-							if(found==0)
-							{
-								new_Con = new Con(o.x+o.w+grid_distance, o.y+o.h/2-((o.h/grid_distance)%2)*grid_distance/2);
-								new_Con.obj_list.push(o);
-								new_Con.obj_list.push(p);
-								connections_new.push(new_Con);
-							}
+							create_connection(o.x+o.w+grid_distance,o.y+o.h/2-((o.h/grid_distance)%2)*grid_distance/2,o,p);
 						}
 					}
 				}
@@ -813,530 +872,76 @@ function update_connections()
 							{
 								if((p.x==o.x && p.y==o.y) || (p.x+p.w==o.x && p.y+p.h==o.y))
 								{
-									found = 0;
-									for(let c of connections_new)
-									{
-										if(c.x==o.x && c.y==o.y)
-										{
-											exists_p = 0;
-											exists_o = 0;
-											for(let d of c.obj_list)
-											{
-												if(d==o)
-												{
-													exists_o = 1;
-												}
-												else if(d==p)
-												{
-													exists_p = 1;
-												}
-											}
-											
-											if(exists_p==0)
-											{
-												c.obj_list.push(p);
-											}
-											if(exists_o==0)
-											{
-												c.obj_list.push(o);
-											}
-											found = 1;
-										}
-									}
-									if(found==0)
-									{
-										new_Con = new Con(o.x, o.y);
-										new_Con.obj_list.push(o);
-										new_Con.obj_list.push(p);
-										connections_new.push(new_Con);
-									}
+									create_connection(o.x,o.y,o,p);
 								}
 								if((p.x==o.x+o.w && p.y==o.y+o.h) || (p.x+p.w==o.x+o.w && p.y+p.h==o.y+o.h))
 								{
-									found = 0;
-									for(let c of connections_new)
-									{
-										if(c.x==o.x+o.w && c.y==o.y+o.h)
-										{
-											exists_p = 0;
-											exists_o = 0;
-											for(let d of c.obj_list)
-											{
-												if(d==o)
-												{
-													exists_o = 1;
-												}
-												else if(d==p)
-												{
-													exists_p = 1;
-												}
-											}
-											
-											if(exists_p==0)
-											{
-												c.obj_list.push(p);
-											}
-											if(exists_o==0)
-											{
-												c.obj_list.push(o);
-											}
-											found = 1;
-										}
-									}
-									if(found==0)
-									{
-										new_Con = new Con(o.x+o.w, o.y+o.h);
-										new_Con.obj_list.push(o);
-										new_Con.obj_list.push(p);
-										connections_new.push(new_Con);
-									}
+									create_connection(o.x+o.w,o.y+o.h,o,p);
 								}
 							}
 							else if(p.group==groups.gate || p.group==groups.input || p.group==groups.output)
 							{
 								if(p.x-grid_distance==o.x && (o.y>p.y && o.y<(p.y+p.h)) && p.group!=groups.input)
 								{
-									found = 0;
-									for(let c of connections_new)
-									{
-										if(c.x==o.x && c.y==o.y)
-										{
-											exists_p = 0;
-											exists_o = 0;
-											for(let d of c.obj_list)
-											{
-												if(d==o)
-												{
-													exists_o = 1;
-												}
-												else if(d==p)
-												{
-													exists_p = 1;
-												}
-											}
-											
-											if(exists_p==0)
-											{
-												c.obj_list.push(p);
-											}
-											if(exists_o==0)
-											{
-												c.obj_list.push(o);
-											}
-											found = 1;
-										}
-									}
-									if(found==0)
-									{
-										new_Con = new Con(o.x, o.y);
-										new_Con.obj_list.push(o);
-										new_Con.obj_list.push(p);
-										connections_new.push(new_Con);
-									}
+									create_connection(o.x,o.y,o,p);
 								}
 								if(p.x-grid_distance==o.x+o.w && (o.y+o.h>p.y && o.y+o.h<(p.y+p.h)) && p.group!=groups.input)
 								{
-									found = 0;
-									for(let c of connections_new)
-									{
-										if(c.x==o.x+o.w && c.y==o.y+o.h)
-										{
-											exists_p = 0;
-											exists_o = 0;
-											for(let d of c.obj_list)
-											{
-												if(d==o)
-												{
-													exists_o = 1;
-												}
-												else if(d==p)
-												{
-													exists_p = 1;
-												}
-											}
-											
-											if(exists_p==0)
-											{
-												c.obj_list.push(p);
-											}
-											if(exists_o==0)
-											{
-												c.obj_list.push(o);
-											}
-											found = 1;
-										}
-									}
-									if(found==0)
-									{
-										new_Con = new Con(o.x+o.w, o.y+o.h);
-										new_Con.obj_list.push(o);
-										new_Con.obj_list.push(p);
-										connections_new.push(new_Con);
-									}
+									create_connection(o.x+o.w,o.y+o.h,o,p);
 								}
 								if(p.x+p.w+grid_distance==o.x && o.y==p.y+p.h/2-((p.h/grid_distance)%2)*grid_distance/2 && p.group!=groups.output)
 								{
-									found = 0;
-									for(let c of connections_new)
-									{
-										if(c.x==o.x && c.y==o.y)
-										{
-											exists_p = 0;
-											exists_o = 0;
-											for(let d of c.obj_list)
-											{
-												if(d==o)
-												{
-													exists_o = 1;
-												}
-												else if(d==p)
-												{
-													exists_p = 1;
-												}
-											}
-											
-											if(exists_p==0)
-											{
-												c.obj_list.push(p);
-											}
-											if(exists_o==0)
-											{
-												c.obj_list.push(o);
-											}
-											found = 1;
-										}
-									}
-									if(found==0)
-									{
-										new_Con = new Con(o.x, o.y);
-										new_Con.obj_list.push(o);
-										new_Con.obj_list.push(p);
-										connections_new.push(new_Con);
-									}
+									create_connection(o.x,o.y,o,p);
 								}
 								if(p.x+p.w+grid_distance==o.x+o.w && o.y+o.h==p.y+p.h/2-((p.h/grid_distance)%2)*grid_distance/2 && p.group!=groups.output)
 								{
-									found = 0;
-									for(let c of connections_new)
-									{
-										if(c.x==o.x+o.w && c.y==o.y+o.h)
-										{
-											exists_p = 0;
-											exists_o = 0;
-											for(let d of c.obj_list)
-											{
-												if(d==o)
-												{
-													exists_o = 1;
-												}
-												else if(d==p)
-												{
-													exists_p = 1;
-												}
-											}
-											
-											if(exists_p==0)
-											{
-												c.obj_list.push(p);
-											}
-											if(exists_o==0)
-											{
-												c.obj_list.push(o);
-											}
-											found = 1;
-										}
-									}
-									if(found==0)
-									{
-										new_Con = new Con(o.x+o.w, o.y+o.h);
-										new_Con.obj_list.push(o);
-										new_Con.obj_list.push(p);
-										connections_new.push(new_Con);
-									}
+									create_connection(o.x+o.w,o.y+o.h,o,p);
 								}
 							}
 							else if(p.group==groups.fixed)
 							{
 								if(p.x+grid_distance==o.x && p.y==o.y)
 								{
-									found = 0;
-									for(let c of connections_new)
-									{
-										if(c.x==o.x && c.y==o.y)
-										{
-											exists_p = 0;
-											exists_o = 0;
-											for(let d of c.obj_list)
-											{
-												if(d==o)
-												{
-													exists_o = 1;
-												}
-												else if(d==p)
-												{
-													exists_p = 1;
-												}
-											}
-											
-											if(exists_p==0)
-											{
-												c.obj_list.push(p);
-											}
-											if(exists_o==0)
-											{
-												c.obj_list.push(o);
-											}
-											found = 1;
-										}
-									}
-									if(found==0)
-									{
-										new_Con = new Con(o.x, o.y);
-										new_Con.obj_list.push(o);
-										new_Con.obj_list.push(p);
-										connections_new.push(new_Con);
-									}
+									create_connection(o.x,o.y,o,p);
 								}
 								if(p.x+grid_distance==o.x+o.w && p.y==o.y+o.h)
 								{
-									found = 0;
-									for(let c of connections_new)
-									{
-										if(c.x==o.x+o.w && c.y==o.y+o.h)
-										{
-											exists_p = 0;
-											exists_o = 0;
-											for(let d of c.obj_list)
-											{
-												if(d==o)
-												{
-													exists_o = 1;
-												}
-												else if(d==p)
-												{
-													exists_p = 1;
-												}
-											}
-											
-											if(exists_p==0)
-											{
-												c.obj_list.push(p);
-											}
-											if(exists_o==0)
-											{
-												c.obj_list.push(o);
-											}
-											found = 1;
-										}
-									}
-									if(found==0)
-									{
-										new_Con = new Con(o.x+o.w, o.y+o.h);
-										new_Con.obj_list.push(o);
-										new_Con.obj_list.push(p);
-										connections_new.push(new_Con);
-									}
+									create_connection(o.x+o.w,o.y+o.h,o,p);
 								}
 							}
-							
-							
-							
-							
-							
-							
-							
-							
-							//HIER WEITERMACHEN
 							else if(p.group==groups.zff)
 							{
 								if(p.x-grid_distance==o.x && o.y>p.y && o.y<(p.y+p.h))
 								{
-									found = 0;
-									for(let c of connections_new)
+									if(p.type==types.d || (p.type==types.jk && ((o.y-p.y)/grid_distance)%2==1))
 									{
-										if(c.x==o.x && c.y==o.y)
-										{
-											exists_p = 0;
-											exists_o = 0;
-											for(let d of c.obj_list)
-											{
-												if(d==o)
-												{
-													exists_o = 1;
-												}
-												else if(d==p)
-												{
-													exists_p = 1;
-												}
-											}
-											
-											if(exists_p==0)
-											{
-												c.obj_list.push(p);
-											}
-											if(exists_o==0)
-											{
-												c.obj_list.push(o);
-											}
-											found = 1;
-										}
-									}
-									if(found==0)
-									{
-										new_Con = new Con(o.x, o.y);
-										new_Con.obj_list.push(o);
-										new_Con.obj_list.push(p);
-										connections_new.push(new_Con);
+										create_connection(o.x,o.y,o,p);
 									}
 								}
 								if(p.x-grid_distance==o.x+o.w && o.y+o.h>p.y && o.y+o.h<(p.y+p.h))
 								{
-									found = 0;
-									for(let c of connections_new)
+									if(p.type==types.d || (p.type==types.jk && ((o.y+o.h-p.y)/grid_distance)%2==1))
 									{
-										if(c.x==o.x+o.w && c.y==o.y+o.h)
-										{
-											exists_p = 0;
-											exists_o = 0;
-											for(let d of c.obj_list)
-											{
-												if(d==o)
-												{
-													exists_o = 1;
-												}
-												else if(d==p)
-												{
-													exists_p = 1;
-												}
-											}
-											
-											if(exists_p==0)
-											{
-												c.obj_list.push(p);
-											}
-											if(exists_o==0)
-											{
-												c.obj_list.push(o);
-											}
-											found = 1;
-										}
-									}
-									if(found==0)
-									{
-										new_Con = new Con(o.x+o.w, o.y+o.h);
-										new_Con.obj_list.push(o);
-										new_Con.obj_list.push(p);
-										connections_new.push(new_Con);
+										create_connection(o.x+o.w,o.y+o.h,o,p);
 									}
 								}
-								if(p.x+p.w+grid_distance==o.x && o.y==p.y+p.h/2-((p.h/grid_distance)%2)*grid_distance/2)
+								if(p.x+p.w+grid_distance==o.x && o.y>p.y && o.y<(p.y+p.h))
 								{
-									found = 0;
-									for(let c of connections_new)
-									{
-										if(c.x==o.x && c.y==o.y)
-										{
-											exists_p = 0;
-											exists_o = 0;
-											for(let d of c.obj_list)
-											{
-												if(d==o)
-												{
-													exists_o = 1;
-												}
-												else if(d==p)
-												{
-													exists_p = 1;
-												}
-											}
-											
-											if(exists_p==0)
-											{
-												c.obj_list.push(p);
-											}
-											if(exists_o==0)
-											{
-												c.obj_list.push(o);
-											}
-											found = 1;
-										}
-									}
-									if(found==0)
-									{
-										new_Con = new Con(o.x, o.y);
-										new_Con.obj_list.push(o);
-										new_Con.obj_list.push(p);
-										connections_new.push(new_Con);
-									}
+									create_connection(o.x,o.y,o,p);
 								}
-								if(p.x+p.w+grid_distance==o.x+o.w && o.y+o.h==p.y+p.h/2-((p.h/grid_distance)%2)*grid_distance/2)
+								if(p.x+p.w+grid_distance==o.x+o.w && o.y+o.h>p.y && o.y+o.h<(p.y+p.h))
 								{
-									found = 0;
-									for(let c of connections_new)
-									{
-										if(c.x==o.x+o.w && c.y==o.y+o.h)
-										{
-											exists_p = 0;
-											exists_o = 0;
-											for(let d of c.obj_list)
-											{
-												if(d==o)
-												{
-													exists_o = 1;
-												}
-												else if(d==p)
-												{
-													exists_p = 1;
-												}
-											}
-											
-											if(exists_p==0)
-											{
-												c.obj_list.push(p);
-											}
-											if(exists_o==0)
-											{
-												c.obj_list.push(o);
-											}
-											found = 1;
-										}
-									}
-									if(found==0)
-									{
-										new_Con = new Con(o.x+o.w, o.y+o.h);
-										new_Con.obj_list.push(o);
-										new_Con.obj_list.push(p);
-										connections_new.push(new_Con);
-									}
+									create_connection(o.x+o.w,o.y+o.h,o,p);
+								}
+								if(p.x+p.w/2==o.x && p.y+p.h+grid_distance==o.y)
+								{
+									create_connection(o.x,o.y,o,p);
+								}
+								if(p.x+p.w/2==o.x+o.w && p.y+p.h+grid_distance==o.y+o.h)
+								{
+									create_connection(o.x+o.w,o.y+o.h,o,p);
 								}
 							}
-							
-							
-							
-							
-							
-							
-							
-							
-							
-							
-							
-							
-							
-							
-							
-							
-							
-							
-							
-							
-							
-							
-							
-							
-							
-							
-							
 						}
 					}
 				}
@@ -1345,47 +950,11 @@ function update_connections()
 			case groups.input:
 				for(let p of objects)
 				{
-					if(p!=o && p.group==groups.gate)
+					if(p.group==groups.gate)
 					{
 						if(o.x+o.w+grid_distance == p.x-grid_distance && (p.y<o.y+o.h/2-((o.h/grid_distance)%2)*grid_distance/2 && p.y+p.h>o.y+o.h/2-((o.h/grid_distance)%2)*grid_distance/2))
 						{
-							found = 0;
-							for(let c of connections_new)
-							{
-								if(c.x==o.x+o.w+grid_distance && c.y==o.y+o.h/2-((o.h/grid_distance)%2)*grid_distance/2)
-								{
-									exists_p = 0;
-									exists_o = 0;
-									for(let d of c.obj_list)
-									{
-										if(d==o)
-										{
-											exists_o = 1;
-										}
-										else if(d==p)
-										{
-											exists_p = 1;
-										}
-									}
-									
-									if(exists_p==0)
-									{
-										c.obj_list.push(p);
-									}
-									if(exists_o==0)
-									{
-										c.obj_list.push(o);
-									}
-									found = 1;
-								}
-							}
-							if(found==0)
-							{
-								new_Con = new Con(o.x+o.w+grid_distance, o.y+o.h/2-((o.h/grid_distance)%2)*grid_distance/2);
-								new_Con.obj_list.push(o);
-								new_Con.obj_list.push(p);
-								connections_new.push(new_Con);
-							}
+							create_connection(o.x+o.w+grid_distance,o.y+o.h/2-((o.h/grid_distance)%2)*grid_distance/2,o,p);
 						}
 					}
 				}
@@ -1394,47 +963,11 @@ function update_connections()
 			case groups.output:
 				for(let p of objects)
 				{
-					if((p.group==groups.gate || p.group==groups.input) && p!=o)
+					if(p.group==groups.gate || p.group==groups.input)
 					{
 						if(o.x-grid_distance==p.x+p.w+grid_distance && o.y+grid_distance==p.y+p.h/2-((p.h/grid_distance)%2)*grid_distance/2)
 						{
-							found = 0;
-							for(let c of connections_new)
-							{
-								if(c.x==o.x-grid_distance && c.y==o.y+o.h/2-((o.h/grid_distance)%2)*grid_distance/2)
-								{
-									exists_p = 0;
-									exists_o = 0;
-									for(let d of c.obj_list)
-									{
-										if(d==o)
-										{
-											exists_o = 1;
-										}
-										else if(d==p)
-										{
-											exists_p = 1;
-										}
-									}
-									
-									if(exists_p==0)
-									{
-										c.obj_list.push(p);
-									}
-									if(exists_o==0)
-									{
-										c.obj_list.push(o);
-									}
-									found = 1;
-								}
-							}
-							if(found==0)
-							{
-								new_Con = new Con(o.x-grid_distance, o.y+o.h/2-((o.h/grid_distance)%2)*grid_distance/2);
-								new_Con.obj_list.push(o);
-								new_Con.obj_list.push(p);
-								connections_new.push(new_Con);
-							}
+							create_connection(o.x-grid_distance,o.y+o.h/2-((o.h/grid_distance)%2)*grid_distance/2,o,p);
 						}
 					}
 				}
@@ -1443,54 +976,63 @@ function update_connections()
 			case groups.fixed:
 				for(let p of objects)
 				{
-					if((p.group==groups.gate || p.group==groups.output || p.group==groups.fixed) && p!=o)
+					if(p.group==groups.gate || p.group==groups.output)
 					{
 						if(o.x+grid_distance==p.x-grid_distance && (o.y>p.y && o.y<(p.y+p.h)))
 						{
-							found = 0;
-							for(let c of connections_new)
-							{
-								if(c.x==o.x+grid_distance && c.y==o.y)
-								{
-									exists_p = 0;
-									exists_o = 0;
-									for(let d of c.obj_list)
-									{
-										if(d==o)
-										{
-											exists_o = 1;
-										}
-										else if(d==p)
-										{
-											exists_p = 1;
-										}
-									}
-									
-									if(exists_p==0)
-									{
-										c.obj_list.push(p);
-									}
-									if(exists_o==0)
-									{
-										c.obj_list.push(o);
-									}
-									found = 1;
-								}
-							}
-							if(found==0)
-							{
-								new_Con = new Con(o.x+grid_distance, o.y);
-								new_Con.obj_list.push(o);
-								new_Con.obj_list.push(p);
-								connections_new.push(new_Con);
-							}
+							create_connection(o.x+grid_distance,o.y,o,p);
 						}
 					}
 				}
 				break;
 				
 			case groups.zff:
-			
+				for(let p of objects)
+				{
+					if(p.group==groups.gate || p.group==groups.input)
+					{
+						if(o.x-grid_distance==p.x+p.w+grid_distance && o.y<p.y+p.h/2-((p.h/grid_distance)%2)*grid_distance/2 && o.y+o.h>p.y+p.h/2-((p.h/grid_distance)%2)*grid_distance/2)
+						{
+							if(o.type==types.d || (o.type==types.jk && ((p.y+p.h/2-((p.h/grid_distance)%2)*grid_distance/2-o.y)/grid_distance)%2==1))
+							{
+								create_connection(o.x-grid_distance,p.y+p.h/2-((p.h/grid_distance)%2)*grid_distance/2,o,p);
+							}
+						}
+						if(o.x+o.w/2==p.x+p.w+grid_distance && o.y+o.h+grid_distance==p.y+p.h/2-((p.h/grid_distance)%2)*grid_distance/2)
+						{
+							create_connection(o.x+o.w/2,p.y+p.h/2-((p.h/grid_distance)%2)*grid_distance/2,o,p);
+						}
+						if(p.group==groups.gate && o.x+o.w/2==p.x-grid_distance && o.y+o.h+grid_distance>p.y && o.y+o.h+grid_distance<p.y+p.h)
+						{
+							create_connection(o.x+o.w/2,o.y+o.h+grid_distance,o,p);
+						}
+					}
+					else if(p.group==groups.fixed)
+					{
+						if(o.x-grid_distance==p.x+grid_distance && o.y<p.y && o.y+o.h>p.y)
+						{
+							if(o.type==types.d || (o.type==types.jk && ((p.y-o.y)/grid_distance)%2==1))
+							{
+								create_connection(o.x-grid_distance,p.y,o,p);
+							}
+						}
+						if(p.x+grid_distance==o.x+o.w/2 && p.y==o.y+o.h+grid_distance)
+						{
+							create_connection(p.x+grid_distance,p.y,o,p);
+						}
+					}
+					else if(p.group==groups.output)
+					{
+						if(o.x+o.w+grid_distance==p.x-grid_distance && o.y<=p.y && o.y+o.h>p.y+grid_distance)
+						{
+							create_connection(o.x+o.w+grid_distance,p.y+grid_distance,o,p);
+						}
+						if(p.x-grid_distance==o.x+o.w/2 && p.y==o.y+o.h)
+						{
+							create_connection(p.x-grid_distance,p.y+grid_distance,o,p);
+						}
+					}
+				}
 				break;
 				
 			default:
@@ -1499,7 +1041,7 @@ function update_connections()
 		}
 	}
 	
-	found = 0;
+	var found = 0;
 	for(let c of connections_new)
 	{
 		for(let d of connections)
@@ -1518,9 +1060,49 @@ function update_connections()
 	
 	connections.length = 0;
 	connections.push.apply(connections, connections_new);
-	connections_new.length = 0;
 	
 	analyse();
+}
+
+function create_connection(x,y,o,p)
+{
+	var found = 0;
+	for(let c of connections_new)
+	{
+		if(c.x==x && c.y==y)
+		{
+			exists_p = 0;
+			exists_o = 0;
+			for(let d of c.obj_list)
+			{
+				if(d==o)
+				{
+					exists_o = 1;
+				}
+				else if(d==p)
+				{
+					exists_p = 1;
+				}
+			}
+			
+			if(exists_p==0)
+			{
+				c.obj_list.push(p);
+			}
+			if(exists_o==0)
+			{
+				c.obj_list.push(o);
+			}
+			found = 1;
+		}
+	}
+	if(found==0)
+	{
+		new_Con = new Con(x, y);
+		new_Con.obj_list.push(o);
+		new_Con.obj_list.push(p);
+		connections_new.push(new_Con);
+	}
 }
 
 function draw_connections()
@@ -1638,7 +1220,7 @@ function analyse()
 					o.analyse(c);
 					for(let d of connections)
 					{
-						if(d.stat!=o.stat | steady_state==0)
+						if(d.stat!=o.stat || steady_state==0)
 						{
 							if(d.x==o.x+o.w+grid_distance && d.y==o.y+o.h/2-((o.h/grid_distance)%2)*grid_distance/2)
 							{
@@ -1669,6 +1251,79 @@ function analyse()
 						document.getElementById("alarm").style.visibility = "visible";
 					}
 					return;
+				}
+				else if(o.group==groups.zff && o!=c.start_obj)
+				{
+					if(c.x<o.x)
+					{
+						if(shortcircuitflag==0)
+						{
+							shortcircuitflag = 1;
+							alert("Kurzschluss oder Leiterschleife!");
+							document.getElementById("alarm").style.visibility = "visible";
+						}
+						return;
+					}
+					if(c.x==o.x+o.w/2)
+					{
+						if(c.stat==1 && o.spec_1==0)
+						{
+							o.analyse(c);
+						}
+						for(let d of connections)
+						{
+							for(var i=1; i<o.h/grid_distance; i++)
+							{
+								if(o.type==types.d || (o.type==types.jk && i%2==1))
+								{
+									if(d.stat!=o.stat[floor(i/2)] || steady_state==0)
+									{
+										if(d.x==o.x-grid_distance && d.y==o.y+(i*grid_distance))
+										{
+											d.stat = o.stat[floor(i/2)];
+											d.start_obj = o;
+											d.done++;
+											if(d.done>max_iterations)
+											{
+												if(shortcircuitflag==0)
+												{
+													shortcircuitflag = 1;
+													alert("Instabile Schaltung!");
+													document.getElementById("alarm").style.visibility = "visible";
+												}
+												return;
+											}
+											cycle_1.push(d);
+										}
+									}
+								}
+								else if(o.type==types.d)
+								{
+									if(d.stat!=o.stat[i-1] || steady_state==0)
+									{
+										if(d.x==o.x-grid_distance && d.y==o.y+(i*grid_distance))
+										{
+											d.stat = o.stat[i-1];
+											d.start_obj = o;
+											d.done++;
+											if(d.done>max_iterations)
+											{
+												if(shortcircuitflag==0)
+												{
+													shortcircuitflag = 1;
+													alert("Instabile Schaltung!");
+													document.getElementById("alarm").style.visibility = "visible";
+												}
+												return;
+											}
+											cycle_1.push(d);
+										}
+									}
+								}
+							}
+						}
+						o.spec_1 = c.stat;
+					}
 				}
 			}
 		}
