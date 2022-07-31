@@ -1930,11 +1930,7 @@ document.forms["input_form"].elements["input_file"].onchange = function(event)
 
 function save_circuit()
 {
-	let old_zoom = zoom;
-	let old_trans_x = trans_x;
-	let old_trans_y = trans_y;
 	zoom_func(-zoom);
-	translate_func(-trans_x, -trans_y);
 	
 	let text = "";
 	for(let o of objects)
@@ -1950,8 +1946,7 @@ function save_circuit()
 	window.URL.revokeObjectURL(url);
 	anchor.remove();
 	
-	zoom_func(old_zoom);
-	translate_func(old_trans_x, old_trans_y);
+	view_fit();
 }
 
 function clear_circuit()
