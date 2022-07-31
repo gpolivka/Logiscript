@@ -234,20 +234,32 @@ class Obj
 				textFont('Arial');
 				textStyle(BOLD);
 				textAlign(RIGHT, CENTER);
-				if(this.spec_1>=10)
+				if(this.spec_1==4711)
 				{
-					text("E", this.x+(this.w/2)+grid_distance/8, this.y+(this.h/2));
-					textSize(grid_distance/2);
-					textAlign(LEFT, CENTER);
-					text(this.spec_1, this.x+(this.w/2)+grid_distance/8, this.y+(this.h/2)+grid_distance/2);
+					stroke(low_color);
+					strokeWeight(grid_distance/5);
+					line(this.x+this.w/8, this.y+this.h*3/4,this.x+this.w*3/8, this.y+this.h*3/4);
+					line(this.x+this.w*3/8, this.y+this.h*3/4,this.x+this.w*3/8, this.y+this.h/4);
+					line(this.x+this.w*3/8, this.y+this.h/4,this.x+this.w*5/8, this.y+this.h/4);
+					line(this.x+this.w*5/8, this.y+this.h/4,this.x+this.w*5/8, this.y+this.h*3/4);
+					line(this.x+this.w*5/8, this.y+this.h*3/4,this.x+this.w*7/8, this.y+this.h*3/4);
 				}
 				else
 				{
-					text("E", this.x+(this.w/2)+grid_distance/4, this.y+(this.h/2));
-					textSize(grid_distance/2);
-					textAlign(LEFT, CENTER);
-					text(this.spec_1, this.x+(this.w/2)+grid_distance/4, this.y+(this.h/2)+grid_distance/2);
-
+					if(this.spec_1>=10)
+					{
+						text("E", this.x+(this.w/2)+grid_distance/8, this.y+(this.h/2));
+						textSize(grid_distance/2);
+						textAlign(LEFT, CENTER);
+						text(this.spec_1, this.x+(this.w/2)+grid_distance/8, this.y+(this.h/2)+grid_distance/2);
+					}
+					else
+					{
+						text("E", this.x+(this.w/2)+grid_distance/4, this.y+(this.h/2));
+						textSize(grid_distance/2);
+						textAlign(LEFT, CENTER);
+						text(this.spec_1, this.x+(this.w/2)+grid_distance/4, this.y+(this.h/2)+grid_distance/2);
+					}
 				}
 				
 				switch(this.stat)
@@ -575,6 +587,10 @@ class Obj
 						}
 					}
 				}
+				if(inputs.length<i && this.group==groups.zff)
+				{
+					inputs.push(2);
+				}
 			}
 		}
 		if(this.group==groups.gate)
@@ -660,17 +676,13 @@ class Obj
 				break;
 				
 			case types.jk:
-				if(inputs.length<this.h/grid_distance-1 || undef==1)
+				for(let i=0; i<inputs.length-1; i=i+2)
 				{
-					alert("Zustand von mindestens einem Vorbereitungseingang undefiniert!");
-					for(let i=0; i<this.stat.length; i++)
+					if(inputs[i]==2 || inputs[i+1]==2)
 					{
-						this.stat[i] = 2;
+						this.stat[i/2] = 2;
 					}
-				}
-				else
-				{
-					for(let i=0; i<inputs.length-1; i=i+2)
+					else
 					{
 						if(inputs[i]==1 && inputs[i+1]==0)
 						{
@@ -700,20 +712,9 @@ class Obj
 				break;
 				
 			case types.d:
-				if(inputs.length<this.h/grid_distance-1 || undef==1)
+				for(let i=0; i<inputs.length; i++)
 				{
-					alert("Zustand von mindestens einem Vorbereitungseingang undefiniert!");
-					for(let i=0; i<this.stat.length; i++)
-					{
-						this.stat[i] = 2;
-					}
-				}
-				else
-				{
-					for(let i=0; i<inputs.length; i++)
-					{
-						this.stat[i] = inputs[i];
-					}
+					this.stat[i] = inputs[i];
 				}
 				break;
 				
@@ -756,8 +757,8 @@ function setup()
 	
 	
 	//TESTTESTTEST##########################################
-	objects.push(new Obj(10*grid_distance, 15*grid_distance, 4*grid_distance, 7*grid_distance, groups.zff,types.jk,0,new Array(2,2,2),0,0,0));
-	objects.push(new Obj(10*grid_distance, 2*grid_distance, 4*grid_distance, 7*grid_distance, groups.zff,types.d,0,new Array(2,2,2,2,2,2),0,0,0));
+	objects.push(new Obj(10*grid_distance, 15*grid_distance, 4*grid_distance, 5*grid_distance, groups.zff,types.jk,0,new Array(2,2),0,0,0));
+	objects.push(new Obj(10*grid_distance, 2*grid_distance, 4*grid_distance, 5*grid_distance, groups.zff,types.d,0,new Array(2,2,2,2),0,0,0));
 	//TESTTESTTEST##########################################
 }
 
@@ -1499,6 +1500,11 @@ function mouseReleased()
 			if(grabbed.stat==0)
 			{
 				grabbed.stat = 1;
+				if(grabbed.group==groups.input && grabbed.spec_1==4711)
+				{
+					update_connections();
+					grabbed.stat = 0;
+				}
 			}
 			else
 			{
@@ -1728,7 +1734,7 @@ function view_fit()
 	{
 		zoom_func(1);
 	}
-	while((o_x_max.x>width || o_x_max.x+o_x_max.w>width || o_y_max.y>height || o_y_max.y+o_y_max.h>height) && grid_distance>grid_distance_min)
+	while((o_x_max.x>width || o_x_max.x+o_x_max.w>width || o_y_max.y>height || o_y_max.y+o_y_max.h>height || (o_y_max.y+o_y_max.h+grid_distance>height && o_y_max.group==groups.zff)) && grid_distance>grid_distance_min)
 	{
 		zoom_func(-1);
 	}
@@ -1775,7 +1781,7 @@ function newInOut(group)
 	var label = 1;
 	for(let o of objects)
 	{
-		if(o.group==group)
+		if(o.group==group && o.spec_1!=4711)
 		{
 			label++;
 		}
@@ -1857,12 +1863,36 @@ function load_circuit(arg)
 		for(let i=0; i<objs.length-1; i++)
 		{
 			let properties = objs[i].split(',');
-			if(properties.length!=11)
+			if(properties.length==11 && parseInt(properties[4])!=groups.zff)
+			{
+				objects.push(new Obj(parseInt(properties[0]), parseInt(properties[1]), parseInt(properties[2]), parseInt(properties[3]), parseInt(properties[4]), parseInt(properties[5]), parseInt(properties[6]), parseInt(properties[7]), parseInt(properties[8]), parseInt(properties[9]), parseInt(properties[10])));
+			}
+			else if(parseInt(properties[4])==groups.zff && parseInt(properties[5])==types.jk && properties.length==10+(parseInt(properties[3])/grid_distance-1)/2)
+			{
+				let outputs = (parseInt(properties[3])/grid_distance-1)/2;
+				let stat = [];
+				for(let i=0; i<outputs; i++)
+				{
+					stat.push(2);
+				}
+				objects.push(new Obj(parseInt(properties[0]), parseInt(properties[1]), parseInt(properties[2]), parseInt(properties[3]), parseInt(properties[4]), parseInt(properties[5]), parseInt(properties[6]), stat, parseInt(properties[7+outputs]), parseInt(properties[8+outputs]), parseInt(properties[9+outputs])));
+			}
+			else if(parseInt(properties[4])==groups.zff && parseInt(properties[5])==types.d && properties.length==10+(parseInt(properties[3])/grid_distance-1))
+			{
+				let outputs = (parseInt(properties[3])/grid_distance-1);
+				let stat = [];
+				for(let i=0; i<outputs; i++)
+				{
+					stat.push(2);
+				}
+				objects.push(new Obj(parseInt(properties[0]), parseInt(properties[1]), parseInt(properties[2]), parseInt(properties[3]), parseInt(properties[4]), parseInt(properties[5]), parseInt(properties[6]), stat, parseInt(properties[7+outputs]), parseInt(properties[8+outputs]), parseInt(properties[9+outputs])));
+			}
+			else
 			{
 				alert("Schaltung ungültig!");
 				return;
 			}
-			objects.push(new Obj(parseInt(properties[0]), parseInt(properties[1]), parseInt(properties[2]), parseInt(properties[3]), parseInt(properties[4]), parseInt(properties[5]), parseInt(properties[6]), parseInt(properties[7]), parseInt(properties[8]), parseInt(properties[9]), parseInt(properties[10])));
+			
 		}
 		document.getElementById("input_form").reset();
 		document.getElementById("input_form").style.visibility = "hidden";
@@ -1900,13 +1930,17 @@ document.forms["input_form"].elements["input_file"].onchange = function(event)
 
 function save_circuit()
 {
-	let text = "";
+	let old_zoom = zoom;
+	let old_trans_x = trans_x;
+	let old_trans_y = trans_y;
+	zoom_func(-zoom);
+	translate_func(-trans_x, -trans_y);
 	
+	let text = "";
 	for(let o of objects)
 	{
 		text = text.concat(o.x,",",o.y,",",o.w,",",o.h,",",o.group,",",o.type,",",o.inv,",",o.stat,",",o.erase,",",o.spec_1,",",o.spec_2,";");
 	}
-	
 	var myBlob = new Blob([text], {type: "text/plain"});
 	var url = window.URL.createObjectURL(myBlob);
 	var anchor = document.createElement("a");
@@ -1914,7 +1948,10 @@ function save_circuit()
 	anchor.download = "Circuit.txt";
 	anchor.click();
 	window.URL.revokeObjectURL(url);
-	document.removeChild(anchor);
+	anchor.remove();
+	
+	zoom_func(old_zoom);
+	translate_func(old_trans_x, old_trans_y);
 }
 
 function clear_circuit()
