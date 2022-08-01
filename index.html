@@ -5,7 +5,7 @@
 		<link href="logiscript.css" rel="stylesheet">	
 		<title>LogiScript</title>
 	</head>
-	<body>
+	<body onload="doStart(false);" onbeforeunload="doUnload(false);" onunload="doUnload();">
 		<div id="div_body">
 			<div id="div_button_top">
 				<button class="button_top button_cursor" onclick="sel(0)"></button>
@@ -61,6 +61,8 @@
 		</div>
 	
 		<script src="p5.min.js"></script>
+		<script src="scormfunctions.js"></script>
+		<script src="contentfunctions.js"></script>
 		<script src="logiscript.js"></script>
 	</body>
 </html>

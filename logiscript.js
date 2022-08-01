@@ -91,6 +91,7 @@ class Obj
 		switch(this.group)
 		{
 			case groups.gate:
+				fill_color(this);
 				stroke(gate_stroke_color);
 				strokeWeight(grid_distance/5);
 				rect(this.x, this.y, this.w, this.h, corner_radius);
@@ -209,6 +210,7 @@ class Obj
 						alert("Fehler: Unbekannter Zustand!");
 						break;
 				}
+				fill_color(this);
 				strokeWeight(grid_distance/5);
 				if(this.spec_1 == 1)
 				{
@@ -221,6 +223,7 @@ class Obj
 				break;
 				
 			case groups.input:
+				fill_color(this);
 				stroke(gate_stroke_color);
 				strokeWeight(grid_distance/5);
 				rect(this.x, this.y, this.w, this.h, corner_radius);
@@ -382,6 +385,7 @@ class Obj
 				break;
 				
 			case groups.zff:
+				fill_color(this);
 				stroke(gate_stroke_color);
 				strokeWeight(grid_distance/5);
 				rect(this.x, this.y, this.w, this.h, corner_radius);
@@ -753,13 +757,8 @@ function setup()
 	p5.disableFriendlyErrors = true;
 	frameRate(24);
 	
-	strokeCap(PROJECT);
-	
-	
-	//TESTTESTTEST##########################################
-	objects.push(new Obj(10*grid_distance, 15*grid_distance, 4*grid_distance, 5*grid_distance, groups.zff,types.jk,0,new Array(2,2),0,0,0));
-	objects.push(new Obj(10*grid_distance, 2*grid_distance, 4*grid_distance, 5*grid_distance, groups.zff,types.d,0,new Array(2,2,2,2),0,0,0));
-	//TESTTESTTEST##########################################
+	//strokeCap(PROJECT);
+	strokeCap(ROUND);
 }
 
 function windowResized()
@@ -820,11 +819,19 @@ function draw()
 	}
 	for(let o of objects)
 	{
-		if(o == grabbed)
+		o.draw();
+	}
+}
+
+function fill_color(o)
+{
+	if(o.group!=groups.wire)
+	{
+		if(o==grabbed)
 		{
 			fill(grab_color);
 		}
-		else if(o == hover)
+		else if(o==hover)
 		{
 			fill(hover_color);
 		}
@@ -832,7 +839,17 @@ function draw()
 		{
 			fill(gate_color);
 		}
-		o.draw();
+	}
+	else if(o.group==groups.wire)
+	{
+		if(o==grabbed)
+		{
+			stroke(grab_color);
+		}
+		else if(o==hover)
+		{
+			stroke(hover_color);
+		}
 	}
 }
 
@@ -1111,6 +1128,11 @@ function draw_connections()
 	strokeWeight(grid_distance/5);
 	for(let c of connections)
 	{
+		if(c.obj_list.length==2 && c.obj_list[0].group==groups.wire && c.obj_list[1].group==groups.wire)
+		{
+			continue;
+		}
+		
 		switch(c.stat)
 		{
 			case 0:
@@ -2010,3 +2032,126 @@ function Gernot()
 		document.getElementById('Gernot').innerHTML = "Gernot Polivka";
 	}		
 }
+
+
+//SCORM --------------------------------------------------------
+var startTimeStamp = null;
+var processedUnload = false;
+
+function doStart()
+{
+	startTimeStamp = new Date();
+	
+	ScormProcessInitialize();
+	
+	var completionStatus = ScormProcessGetValue("cmi.completion_status", true);
+	if (completionStatus == "unknown"){
+		ScormProcessSetValue("cmi.completion_status", "incomplete");
+	}
+}
+
+function doUnload(pressedExit)
+{
+	if(processedUnload==true)
+	{
+		return;
+	}
+	processedUnload = true;
+	
+	var endTimeStamp = new Date();
+	var totalMilliseconds = (endTimeStamp.getTime()-startTimeStamp.getTime());
+	var scormTime = ConvertMilliSecondsIntoSCORM2004Time(totalMilliseconds);
+	ScormProcessSetValue("cmi.session_time", scormTime);
+	
+	ScormProcessTerminate();
+}
+
+function ConvertMilliSecondsIntoSCORM2004Time(intTotalMilliseconds)
+{
+	var ScormTime = "";
+	var HundredthsOfASecond;
+	
+	var Seconds;
+	var Minutes;
+	var Hours;
+	var Days;
+	var Months;
+	var Years;
+	
+	var HUNDREDTHS_PER_SECOND = 100;
+	var HUNDREDTHS_PER_MINUTE = HUNDREDTHS_PER_SECOND*60;
+	var HUNDREDTHS_PER_HOUR   = HUNDREDTHS_PER_MINUTE*60;
+	var HUNDREDTHS_PER_DAY    = HUNDREDTHS_PER_HOUR*24;
+	var HUNDREDTHS_PER_MONTH  = HUNDREDTHS_PER_DAY*(((365*4)+1)/48);
+	var HUNDREDTHS_PER_YEAR   = HUNDREDTHS_PER_MONTH * 12;
+	
+	HundredthsOfASecond = Math.floor(intTotalMilliseconds/10);
+	Years = Math.floor(HundredthsOfASecond/HUNDREDTHS_PER_YEAR);
+	HundredthsOfASecond -= (Years*HUNDREDTHS_PER_YEAR);
+	Months = Math.floor(HundredthsOfASecond/HUNDREDTHS_PER_MONTH);
+	HundredthsOfASecond -= (Months*HUNDREDTHS_PER_MONTH);
+	Days = Math.floor(HundredthsOfASecond/HUNDREDTHS_PER_DAY);
+	HundredthsOfASecond -= (Days*HUNDREDTHS_PER_DAY);
+	Hours = Math.floor(HundredthsOfASecond/HUNDREDTHS_PER_HOUR);
+	HundredthsOfASecond -= (Hours*HUNDREDTHS_PER_HOUR);
+	Minutes = Math.floor(HundredthsOfASecond/HUNDREDTHS_PER_MINUTE);
+	HundredthsOfASecond -= (Minutes*HUNDREDTHS_PER_MINUTE);
+	Seconds = Math.floor(HundredthsOfASecond/HUNDREDTHS_PER_SECOND);
+	HundredthsOfASecond -= (Seconds*HUNDREDTHS_PER_SECOND);
+	
+	if(Years>0)
+	{
+		ScormTime += Years+"Y";
+	}
+	if(Months>0)
+	{
+		ScormTime += Months+"M";
+	}
+	if(Days>0)
+	{
+		ScormTime += Days+"D";
+	}
+	
+	if((HundredthsOfASecond+Seconds+Minutes+Hours)>0)
+	{
+		ScormTime += "T";
+		if(Hours>0)
+		{
+			ScormTime += Hours+"H";
+		}
+		if(Minutes>0)
+		{
+			ScormTime += Minutes+"M";
+		}
+		if((HundredthsOfASecond+Seconds)>0)
+		{
+			ScormTime += Seconds;
+			if(HundredthsOfASecond>0)
+			{
+				ScormTime += "."+HundredthsOfASecond;
+			}
+			ScormTime += "S";
+		}
+	}
+	
+	if(ScormTime=="")
+	{
+		ScormTime = "0S";
+	}
+	
+	ScormTime = "P"+ScormTime;
+	return ScormTime;
+}
+
+function RecordTest()
+{
+	let score = 100;
+	ScormProcessSetValue("cmi.score.raw", score);
+	ScormProcessSetValue("cmi.score.min", "0");
+	ScormProcessSetValue("cmi.score.max", "100");
+	ScormProcessSetValue("cmi.score.scaled", score/100);
+	
+	ScormProcessSetValue("cmi.success_status", "passed");
+	ScormProcessSetValue("cmi.completion_status", "completed");
+}
+//SCORM-Ende ---------------------------------------------------
