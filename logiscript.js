@@ -15,6 +15,7 @@ const grab_color = '#707070';
 const undefined_color = '#808080';
 const low_color = '#000000';
 const high_color = '#00FF00';
+const wire_no_connection_color = '#FF0000';
 
 
 const groups = {
@@ -48,6 +49,9 @@ var wired;
 var objects = [];
 var connections = [];
 var connections_new = [];
+var noconnections = [];
+var relevant_connections = [];
+var relevant_objects = [];
 var corner_radius = 2;
 var trans_x = 0;
 var trans_y = 0;
@@ -61,11 +65,13 @@ var shortcircuitflag = 0;
 var max_iterations = 10000;
 var max_file_length = 100000;
 var disable_event_flag = 0;
+var blop = new Audio("./sounds/blop.mp3");
+var new_drag_flag = 1;
 
 
 class Obj
 {
-	//wire:		spec_1 = wired		spec_2 = ###
+	//wire:		spec_1 = wired		spec_2 = side (drag)
 	//gate:		spec_1 = ###		spec_2 = ###
 	//input:	spec_1 = label		spec_2 = ###
 	//output:	spec_1 = label		spec_2 = ###
@@ -91,6 +97,7 @@ class Obj
 		switch(this.group)
 		{
 			case groups.gate:
+				strokeCap(PROJECT);
 				fill_color(this);
 				stroke(gate_stroke_color);
 				strokeWeight(grid_distance/5);
@@ -192,6 +199,7 @@ class Obj
 				break;
 			
 			case groups.wire:
+				strokeCap(ROUND);
 				switch(this.stat)
 				{
 					case 0:
@@ -223,6 +231,7 @@ class Obj
 				break;
 				
 			case groups.input:
+				strokeCap(PROJECT);
 				fill_color(this);
 				stroke(gate_stroke_color);
 				strokeWeight(grid_distance/5);
@@ -288,6 +297,7 @@ class Obj
 				break;
 				
 			case groups.output:
+				strokeCap(PROJECT);
 				stroke(gate_stroke_color);
 				strokeWeight(grid_distance/5);
 				switch(this.stat)
@@ -354,6 +364,7 @@ class Obj
 				break;
 				
 			case groups.fixed:
+				strokeCap(PROJECT);
 				fill(0);
 				stroke(gate_color);
 				textSize(grid_distance);
@@ -385,6 +396,7 @@ class Obj
 				break;
 				
 			case groups.zff:
+				strokeCap(PROJECT);
 				fill_color(this);
 				stroke(gate_stroke_color);
 				strokeWeight(grid_distance/5);
@@ -747,6 +759,20 @@ class Con
 	}
 }
 
+class NoCon
+{
+	constructor(x,y,obj)
+	{
+		this.x = x;
+		this.y = y;
+		this.obj = obj;
+	}
+	
+	draw()
+	{
+		circle(this.x, this.y, grid_distance/4);
+	}
+}
 
 function setup()
 {
@@ -757,8 +783,53 @@ function setup()
 	p5.disableFriendlyErrors = true;
 	frameRate(24);
 	
-	//strokeCap(PROJECT);
-	strokeCap(ROUND);
+	//TESTTESTTEST##########################################
+	alert("Name: "+ScormProcessGetValue("cmi.learner_name", true)+"\n"+"ID: "+ScormProcessGetValue("cmi.learner_id", true));
+	
+	//ScormProcessSetValue("cmi.suspend_data", "");
+	let text = ScormProcessGetValue("cmi.suspend_data", true);
+	if(text[text.length-1]!=';')
+	{
+		//alert("Schaltung ungültig!");
+		return;
+	}
+	let objs = text.split(';');
+	for(let i=0; i<objs.length-1; i++)
+	{
+		let properties = objs[i].split(',');
+		if(properties.length==11 && parseInt(properties[4])!=groups.zff)
+		{
+			objects.push(new Obj(parseInt(properties[0]), parseInt(properties[1]), parseInt(properties[2]), parseInt(properties[3]), parseInt(properties[4]), parseInt(properties[5]), parseInt(properties[6]), parseInt(properties[7]), parseInt(properties[8]), parseInt(properties[9]), parseInt(properties[10])));
+		}
+		else if(parseInt(properties[4])==groups.zff && parseInt(properties[5])==types.jk && properties.length==10+(parseInt(properties[3])/grid_distance-1)/2)
+		{
+			let outputs = (parseInt(properties[3])/grid_distance-1)/2;
+			let stat = [];
+			for(let i=0; i<outputs; i++)
+			{
+				stat.push(2);
+			}
+			objects.push(new Obj(parseInt(properties[0]), parseInt(properties[1]), parseInt(properties[2]), parseInt(properties[3]), parseInt(properties[4]), parseInt(properties[5]), parseInt(properties[6]), stat, parseInt(properties[7+outputs]), parseInt(properties[8+outputs]), parseInt(properties[9+outputs])));
+		}
+		else if(parseInt(properties[4])==groups.zff && parseInt(properties[5])==types.d && properties.length==10+(parseInt(properties[3])/grid_distance-1))
+		{
+			let outputs = (parseInt(properties[3])/grid_distance-1);
+			let stat = [];
+			for(let i=0; i<outputs; i++)
+			{
+				stat.push(2);
+			}
+			objects.push(new Obj(parseInt(properties[0]), parseInt(properties[1]), parseInt(properties[2]), parseInt(properties[3]), parseInt(properties[4]), parseInt(properties[5]), parseInt(properties[6]), stat, parseInt(properties[7+outputs]), parseInt(properties[8+outputs]), parseInt(properties[9+outputs])));
+		}
+		else
+		{
+			alert("Schaltung ungültig!");
+			return;
+		}
+	}
+	update_connections();
+	view_fit();
+	//TESTTESTTEST##########################################
 }
 
 function windowResized()
@@ -1076,8 +1147,53 @@ function update_connections()
 		}
 	}
 	
+	if(connections_new.length>connections.length)
+	{
+		blop.play();
+	}
 	connections.length = 0;
 	connections.push.apply(connections, connections_new);
+	
+	noconnections.length = 0;
+	let side;
+	for(let w of objects)
+	{
+		if(w.group==groups.wire && w.spec_1==0)
+		{
+			found = 0;
+			side = 0;
+			for(let c of connections)
+			{
+				if(w.x==c.x && w.y==c.y)
+				{
+					found++;
+					side = 0;
+				}
+				else if(w.x+w.w==c.x && w.y+w.h==c.y)
+				{
+					found++;
+					side = 1;
+				}
+			}
+			if(found==0)
+			{
+				noconnections.push(new NoCon(w.x, w.y, w));
+				noconnections.push(new NoCon(w.x+w.w, w.y+w.h, w));
+			}
+			else if(found==1)
+			{
+				if(side==1)
+				{
+					noconnections.push(new NoCon(w.x, w.y, w));
+				}
+				else
+				{
+					noconnections.push(new NoCon(w.x+w.w, w.y+w.h, w));
+				}
+			}
+			
+		}
+	}
 	
 	analyse();
 }
@@ -1154,6 +1270,13 @@ function draw_connections()
 				alert("Fehler: Unbekannter Zustand!");
 				break;
 		}
+		circle(c.x, c.y, grid_distance/4);
+	}
+	
+	stroke(wire_no_connection_color);
+	fill(wire_no_connection_color);
+	for(let c of noconnections)
+	{
 		circle(c.x, c.y, grid_distance/4);
 	}
 }
@@ -1424,7 +1547,8 @@ function mousePressed()
 	{
 		return;
 	}
-	
+
+	new_drag_flag = 1;
 	var not_flag = 0;
 	if(hover)
 	{
@@ -1470,6 +1594,11 @@ function mousePressed()
 			{
 				grabbed = hover;
 			}
+			
+			if(hover.group==groups.input && hover.spec_1==4711)
+			{
+				hover.stat = 1;
+			}
 		}
 		else if(hover.erase==0)
 		{
@@ -1494,6 +1623,25 @@ function mousePressed()
 			}
 			else
 			{
+				if(hover!=null && hover.group==groups.wire)
+				{
+					let w_1 = round((m.x-hover.x)/grid_distance)*grid_distance;
+					let h_1 = round((m.y-hover.y)/grid_distance)*grid_distance;
+					let w_2 = hover.x+hover.w-round(m.x/grid_distance)*grid_distance;
+					let h_2 = hover.y+hover.h-round(m.y/grid_distance)*grid_distance;
+					
+					if(w_1!=0 || h_1!=0)
+					{
+						wire_1 = new Obj(hover.x, hover.y, round((m.x-hover.x)/grid_distance)*grid_distance, round((m.y-hover.y)/grid_distance)*grid_distance, groups.wire,0,0,2,0,0,0);
+						objects.push(wire_1);
+					}
+					if(w_2!=0 || h_2!=0)
+					{
+						wire_2 = new Obj(round(m.x/grid_distance)*grid_distance, round(m.y/grid_distance)*grid_distance, hover.x+hover.w-round(m.x/grid_distance)*grid_distance, hover.y+hover.h-round(m.y/grid_distance)*grid_distance, groups.wire,0,0,2,0,0,0);
+						objects.push(wire_2);
+					}
+					objects.splice(objects.indexOf(hover), 1);
+				}
 				wired = new Obj(round(m.x/grid_distance)*grid_distance, round(m.y/grid_distance)*grid_distance, 0, 0, groups.wire,0,0,2,0,1,0);
 				objects.push(wired);
 			}
@@ -1506,6 +1654,109 @@ function mousePressed()
 		wired = null;
 	}
 	update_connections();
+}
+
+function mouseDragged()
+{
+	if(disable_event_flag==1)
+	{
+		return;
+	}
+	
+	if (grabbed)
+	{
+		grabbed.x += movedX;
+		grabbed.y += movedY;
+		
+		if(new_drag_flag==1)
+		{
+			relevant_connections.length = 0;
+			relevant_objects.length = 0;
+			if(grabbed.group!=groups.wire)
+			{
+				for(let c of connections)
+				{
+					for(let o of c.obj_list)
+					{
+						if(o==grabbed)
+						{
+							relevant_connections.push(c);
+							for(let p of c.obj_list)
+							{
+								if(p!=grabbed)
+								{
+									if(p.group==groups.wire)
+									{
+										relevant_objects.push(p);
+										if(p.x==c.x)
+										{
+											p.spec_2 = 0;
+											p.x += movedX;
+											p.y += movedY;
+											p.w -= movedX;
+											p.h -= movedY;
+										}
+										else
+										{
+											p.spec_2 = 1;
+											p.w += movedX;
+											p.h += movedY;
+										}
+									}
+									else if(p.group==groups.input || p.group==groups.output || p.group==groups.fixed)
+									{
+										relevant_objects.push(p);
+									}
+									else
+									{
+										let new_wire = new Obj(c.x, c.y, 0, 0, groups.wire,0,0,2,0,0,1);
+										objects.push(new_wire);
+										relevant_objects.push(new_wire);
+									}
+								}
+							}
+							c.x += movedX;
+							c.y += movedY;
+							break;
+						}
+					}
+				}
+			}
+			new_drag_flag = 0;
+		}
+		else
+		{
+			for(let o of relevant_objects)
+			{
+				if(o.group==groups.wire)
+				{
+					if(o.spec_2==0)
+					{
+						o.x += movedX;
+						o.y += movedY;
+						o.w -= movedX;
+						o.h -= movedY;
+					}
+					else
+					{
+						o.w += movedX;
+						o.h += movedY;
+					}
+				}
+				else
+				{
+					o.x += movedX;
+					o.y += movedY;
+				}
+			}
+			for(let c of relevant_connections)
+			{
+				c.x += movedX;
+				c.y += movedY;
+			}
+		}
+		update_connections();
+	}
 }
 
 function mouseReleased()
@@ -1522,38 +1773,27 @@ function mouseReleased()
 			if(grabbed.stat==0)
 			{
 				grabbed.stat = 1;
-				if(grabbed.group==groups.input && grabbed.spec_1==4711)
-				{
-					update_connections();
-					grabbed.stat = 0;
-				}
 			}
 			else
 			{
 				grabbed.stat = 0;
 			}
 		}
-		grabbed.x = round(grabbed.x/grid_distance)*grid_distance;
-		grabbed.y = round(grabbed.y/grid_distance)*grid_distance;
+		for(let o of objects)
+		{
+			o.x = round(o.x/grid_distance)*grid_distance;
+			o.y = round(o.y/grid_distance)*grid_distance;
+			o.w = round(o.w/grid_distance)*grid_distance;
+			o.h = round(o.h/grid_distance)*grid_distance;
+			if(o.w==0 && o.h==0)
+			{
+				objects.splice(objects.indexOf(o), 1);
+			}
+		}
 		grabbed.draw();
 		grabbed = null;
 	}
 	update_connections();
-}
-
-function mouseDragged()
-{
-	if(disable_event_flag==1)
-	{
-		return;
-	}
-	
-	if (grabbed)
-	{
-		grabbed.x += movedX;
-		grabbed.y += movedY;
-		update_connections(); //eventl. weglassen falls zu langsam
-	}
 }
 
 function keyPressed()
@@ -2052,6 +2292,28 @@ function doStart()
 
 function doUnload(pressedExit)
 {
+	//TESTTESTTEST##########################################
+	let old_zoom = zoom;
+	let old_trans_x = trans_x;
+	let old_trans_y = trans_y;
+	zoom_func(-zoom);
+	translate_func(-trans_x, -trans_y);
+	
+	let text = "";
+	for(let o of objects)
+	{
+		text = text.concat(o.x,",",o.y,",",o.w,",",o.h,",",o.group,",",o.type,",",o.inv,",",o.stat,",",o.erase,",",o.spec_1,",",o.spec_2,";");
+	}
+	
+	if(text == "25,350,100,125,5,4,0,2,2,0,0,0;25,25,100,125,5,5,0,2,2,2,2,0,0,0;")
+	{
+		RecordTest();
+	}
+	
+	ScormProcessSetValue("cmi.suspend_data", text);
+	ScormProcessSetValue("cmi.exit", "suspend");
+	//TESTTESTTEST##########################################
+	
 	if(processedUnload==true)
 	{
 		return;
