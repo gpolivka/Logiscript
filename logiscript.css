@@ -45,6 +45,22 @@ body {
 	border: 2px ridge darkgrey;
 }
 
+.iframe_pdf {
+	flex-grow: 1;
+	margin-top: 2px;
+	margin-bottom: 2px;
+	line-height: 0;
+	border: 2px ridge darkgrey;
+}
+
+#iframe_manual {
+	visibility: collapse;
+}
+
+#iframe_task {
+	visibility: collapse;
+}
+
 #input_form {
 	position: absolute;
 	left: 50%;
@@ -113,87 +129,93 @@ button {
 	background-image: url('./images/gate.png');
 }
 
-.button_ngate {
-	background-image: url('./images/ngate.png');
-}
-
-.button_not {
+#button_not {
 	background-image: url('./images/not.png');
 }
 
-.button_cursor {
+#button_cursor {
 	background-image: url('./images/cursor.png');
 }
 
-.button_wire {
+#button_wire {
 	background-image: url('./images/wire.png');
 }
 
-.button_input {
+#button_input {
 	background-image: url('./images/input.png');
 }
 
-.button_output {
+#button_output {
 	background-image: url('./images/output.png');
 }
 
-.button_fixed {
+#button_fixed {
 	background-image: url('./images/fixed.png');
 }
 
-.button_manual {
+#button_close {
+	background-image: url('./images/close.png');
+	display: none;
+}
+
+#button_open_new_window {
+	background-image: url('./images/nw.png');
+	display: none;
+}
+
+#button_manual {
 	background-image: url('./images/manual.png');
 }
 
-.button_task {
+#button_task {
 	background-image: url('./images/task.png');
 }
 
-.button_check {
+#button_check {
 	background-image: url('./images/check.png');
 }
 
-.button_load {
+#button_load {
 	background-image: url('./images/load.png');
 }
 
-.button_save {
+#button_save {
 	background-image: url('./images/save.png');
 }
 
-.button_clear {
+#button_clear {
 	background-image: url('./images/clear.png');
 }
 
-.button_clear:hover {
+#button_clear:hover {
 	background-image: url('./images/clear_hover.png');
 }
 
-.button_zoomin {
+#button_zoomin {
 	background-image: url('./images/zoomin.png');
 }
 
-.button_zoomout {
+#button_zoomout {
 	background-image: url('./images/zoomout.png');
 }
 
-.button_fit {
+#button_fit {
 	background-image: url('./images/fit.png');
 }
 
-.button_up {
+#button_up {
 	background-image: url('./images/up.png');
 }
 
-.button_down {
+#button_down {
 	background-image: url('./images/down.png');
 }
 
-.button_left {
+#button_left {
 	background-image: url('./images/left.png');
 }
 
-.button_right {
+#button_right {
 	background-image: url('./images/right.png');
 }
 

@@ -72,7 +72,7 @@ var new_drag_flag = 1;
 class Obj
 {
 	//wire:		spec_1 = wired		spec_2 = side (drag)
-	//gate:		spec_1 = ###		spec_2 = ###
+	//gate:		spec_1 = clk_old	spec_2 = ###
 	//input:	spec_1 = label		spec_2 = ###
 	//output:	spec_1 = label		spec_2 = ###
 	//fixed:	spec_1 = ###		spec_2 = ###
@@ -184,8 +184,9 @@ class Obj
 				line(this.x+this.w+(grid_distance/5), this.y+this.h/2-((this.h/grid_distance)%2)*grid_distance/2, this.x+this.w+grid_distance, this.y+this.h/2-((this.h/grid_distance)%2)*grid_distance/2);
 				if(binary[0]=='1')
 				{
-					stroke(gate_stroke_color);
-					circle(this.x+this.w, this.y+this.h/2-((this.h/grid_distance)%2)*grid_distance/2, grid_distance/2);
+					stroke(0);
+					fill('#FFFFFF');
+					circle(this.x+this.w+grid_distance*3/8, this.y+this.h/2-((this.h/grid_distance)%2)*grid_distance/2, grid_distance/2);
 				}
 				for(var i=1; i<this.h/grid_distance; i++)
 				{
@@ -221,8 +222,9 @@ class Obj
 					
 					if(i-1<binary.length && binary[binary.length-i]=='1')
 					{
-						stroke(gate_stroke_color);
-						circle(this.x, this.y+(i*grid_distance), grid_distance/2);
+						stroke(0);
+						fill('#FFFFFF');
+						circle(this.x-grid_distance*3/8, this.y+(i*grid_distance), grid_distance/2);
 					}
 				}
 				break;
@@ -632,13 +634,13 @@ class Obj
 						}
 					}
 				}
-				if(inputs.length<i && this.group==groups.zff)
+				if(inputs.length<i && (this.type==types.d || this.type==types.jk))
 				{
 					inputs.push(2);
 				}
 			}
 		}
-		if(this.group==groups.gate)
+		if(this.group==groups.gate && this.type!=types.d && this.type!=types.jk)
 		{
 			var binary = dec2bin(this.inv);
 			var sum = 0;
@@ -721,35 +723,71 @@ class Obj
 				break;
 				
 			case types.jk:
-				for(let i=0; i<inputs.length-1; i=i+2)
+				if(this.group==groups.gate)
 				{
-					if(inputs[i]==2 || inputs[i+1]==2)
+					if(inputs[0]==2 || inputs[2]==2)
 					{
-						this.stat[i/2] = 2;
+						this.stat = 2;
 					}
 					else
 					{
-						if(inputs[i]==1 && inputs[i+1]==0)
+						if(inputs[0]==1 && inputs[2]==0)
 						{
-							this.stat[i/2] = 1;
+							this.stat = 1;
 						}
-						else if(inputs[i]==0 && inputs[i+1]==1)
+						else if(inputs[0]==0 && inputs[2]==1)
 						{
-							this.stat[i/2] = 0;
+							this.stat = 0;
 						}
-						else if(inputs[i]==1 && inputs[i+1]==1)
+						else if(inputs[0]==1 && inputs[2]==1)
 						{
-							if(this.stat[i/2]==0)
+							if(this.stat==0)
 							{
-								this.stat[i/2] = 1;
+								this.stat = 1;
 							}
-							else if(this.stat[i/2]==1)
+							else if(this.stat==1)
 							{
-								this.stat[i/2] =0;
+								this.stat = 0;
 							}
 							else
 							{
-								this.stat[i/2] = 2;
+								this.stat = 2;
+							}
+						}
+					}
+				}
+				else
+				{
+					for(let i=0; i<inputs.length-1; i=i+2)
+					{
+						if(inputs[i]==2 || inputs[i+1]==2)
+						{
+							this.stat[i/2] = 2;
+						}
+						else
+						{
+							if(inputs[i]==1 && inputs[i+1]==0)
+							{
+								this.stat[i/2] = 1;
+							}
+							else if(inputs[i]==0 && inputs[i+1]==1)
+							{
+								this.stat[i/2] = 0;
+							}
+							else if(inputs[i]==1 && inputs[i+1]==1)
+							{
+								if(this.stat[i/2]==0)
+								{
+									this.stat[i/2] = 1;
+								}
+								else if(this.stat[i/2]==1)
+								{
+									this.stat[i/2] =0;
+								}
+								else
+								{
+									this.stat[i/2] = 2;
+								}
 							}
 						}
 					}
@@ -757,9 +795,16 @@ class Obj
 				break;
 				
 			case types.d:
-				for(let i=0; i<inputs.length; i++)
+				if(this.group==groups.gate)
 				{
-					this.stat[i] = inputs[i];
+					this.stat = inputs[0];
+				}
+				else
+				{
+					for(let i=0; i<inputs.length; i++)
+					{
+						this.stat[i] = inputs[i];
+					}
 				}
 				break;
 				
@@ -1350,7 +1395,10 @@ function analyse()
 						}
 						return;
 					}
-					o.analyse(c);
+					if((o.type!=types.d && o.type!=types.jk) || (c.y==o.y+2*grid_distance && c.stat==1 && o.spec_1==0))
+					{
+						o.analyse(c);
+					}
 					for(let d of connections)
 					{
 						if(d.stat!=o.stat || steady_state==0)
@@ -1373,6 +1421,10 @@ function analyse()
 								cycle_1.push(d);
 							}
 						}
+					}
+					if(c.y==o.y+2*grid_distance)
+					{
+						o.spec_1 = c.stat;
 					}
 				}
 				else if((o.group==groups.input || o.group==groups.fixed) && o!=c.start_obj)
@@ -1536,7 +1588,7 @@ function mouseMoved()
 	{
 		if(o.group==groups.gate || o.group==groups.input || o.group==groups.output || o.group==groups.zff)
 		{
-			if(m.x>o.x-grab_tolerance*(grid_distance/5) && m.x<o.x+o.w+grab_tolerance*(grid_distance/5) && m.y>o.y-grab_tolerance*(grid_distance/5) && m.y<o.y+o.h+grab_tolerance*(grid_distance/5))
+			if(m.x>o.x-grid_distance*3/8-grab_tolerance*(grid_distance/5) && m.x<o.x+o.w+grid_distance*3/8+grab_tolerance*(grid_distance/5) && m.y>o.y-grab_tolerance*(grid_distance/5) && m.y<o.y+o.h+grab_tolerance*(grid_distance/5))
 			{
 				hover = o;
 			}
@@ -1588,7 +1640,7 @@ function mousePressed()
 			{
 				for(var i=1; i<hover.h/grid_distance; i++)
 				{
-					var v = createVector(hover.x, hover.y+(i*grid_distance));
+					var v = createVector(hover.x-grid_distance*3/8, hover.y+(i*grid_distance));
 					if(p5.Vector.dist(m, v)<grid_distance/2)
 					{
 						not_flag = 1;
@@ -1604,7 +1656,7 @@ function mousePressed()
 					}
 				}
 				
-				v = createVector(hover.x+hover.w, hover.y+hover.h/2-((hover.h/grid_distance)%2)*grid_distance/2);
+				v = createVector(hover.x+hover.w+grid_distance*3/8, hover.y+hover.h/2-((hover.h/grid_distance)%2)*grid_distance/2);
 				if(p5.Vector.dist(m, v)<grid_distance/2)
 				{
 					not_flag = 1;
@@ -2200,13 +2252,13 @@ function sel(item)
 	switch(item)
 	{
 		case 0:
-			(document.getElementsByClassName("button_cursor"))[0].style.borderStyle = "inset";
-			(document.getElementsByClassName("button_wire"))[0].style.borderStyle = "outset";
+			document.getElementById("button_cursor").style.borderStyle = "inset";
+			document.getElementById("button_wire").style.borderStyle = "outset";
 			break;
 			
 		case 1:
-			(document.getElementsByClassName("button_cursor"))[0].style.borderStyle = "outset";
-			(document.getElementsByClassName("button_wire"))[0].style.borderStyle = "inset";
+			document.getElementById("button_cursor").style.borderStyle = "outset";
+			document.getElementById("button_wire").style.borderStyle = "inset";
 			break;
 			
 		default:
@@ -2350,17 +2402,47 @@ function clear_circuit()
 
 function manual()
 {
-	alert("Handbuch");
+	document.getElementById("iframe_manual").style.visibility = "visible";
+	document.getElementById("iframe_task").style.visibility = "collapse";
+	document.getElementById("div_simulation").style.visibility = "collapse";
+	document.getElementById("button_close").style.display = "inline";
+	document.getElementById("button_open_new_window").style.display = "inline";
 }
 
 function task()
 {
-	alert("Aufgabenstellung");
+	document.getElementById("iframe_manual").style.visibility = "collapse";
+	document.getElementById("iframe_task").style.visibility = "visible";
+	document.getElementById("div_simulation").style.visibility = "collapse";
+	document.getElementById("button_close").style.display = "inline";
+	document.getElementById("button_open_new_window").style.display = "inline";
 }
 
 function check()
 {
 	alert("Schaltung überprüfen");
+}
+
+function close_window()
+{
+	document.getElementById("iframe_manual").style.visibility = "collapse";
+	document.getElementById("iframe_task").style.visibility = "collapse";
+	document.getElementById("div_simulation").style.visibility = "visible";
+	document.getElementById("button_close").style.display = "none";
+	document.getElementById("button_open_new_window").style.display = "none";
+}
+
+function open_new_window()
+{
+	if(document.getElementById("iframe_manual").style.visibility=="visible")
+	{
+		window.open ("./manual.pdf","","popup");
+	}
+	else
+	{
+		window.open ("./task.pdf","","popup");
+	}
+	close_window();
 }
 
 function LogiScript()

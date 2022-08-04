@@ -8,36 +8,38 @@
 	<body onload="doStart(false);" onbeforeunload="doUnload(false);" onunload="doUnload();">
 		<div id="div_body">
 			<div id="div_button_top">
-				<button class="button_top button_cursor" onclick="sel(0)"></button>
-				<button class="button_top button_wire button_top_placeholder" onclick="sel(1)"></button>
-				<button class="button_top button_not" onclick="newGate(types.not)">1</button>
+				<button class="button_top" id="button_cursor" onclick="sel(0)"></button>
+				<button class="button_top button_top_placeholder" id="button_wire" onclick="sel(1)"></button>
+				<button class="button_top" id="button_not" onclick="newGate(types.not)">1</button>
 				<button class="button_top button_gate" onclick="newGate(types.and)">&</button>
 				<button class="button_top button_gate" onclick="newGate(types.or)">≥1</button>
 				<button class="button_top button_gate button_top_placeholder" onclick="newGate(types.xor)">=1</button>
-				<button class="button_top button_input" onclick="newInOut(groups.input)">E<sub>1</sub></button>
-				<button class="button_top button_output" onclick="newInOut(groups.output)">&nbsp;A<sub>1</sub></button>
-				<button class="button_top button_fixed" onclick="newFixed()">1</button>
+				<button class="button_top" id="button_input" onclick="newInOut(groups.input)">E<sub>1</sub></button>
+				<button class="button_top" id="button_output" onclick="newInOut(groups.output)">&nbsp;A<sub>1</sub></button>
+				<button class="button_top" id="button_fixed" onclick="newFixed()">1</button>
 			</div>
 			
 			<div id="div_main">
 				<div id="div_button_side">
-					<button class="button_side button_load" onclick="load_circuit(0)"></button>
-					<button class="button_side button_save" onclick="save_circuit()"></button>
-					<button class="button_side button_clear button_side_placeholder" onclick="clear_circuit()"></button>
-					<button class="button_side button_zoomin" onclick="zoom_func(1)"></button>
-					<button class="button_side button_zoomout" onclick="zoom_func(-1)"></button>
-					<button class="button_side button_fit button_side_placeholder" onclick="view_fit()"></button>
-					<button class="button_side button_up" onclick="translate_func(0,2)"></button>
-					<button class="button_side button_down" onclick="translate_func(0,-2)"></button>
-					<button class="button_side button_left" onclick="translate_func(2,0)"></button>
-					<button class="button_side button_right" onclick="translate_func(-2,0)"></button>
+					<button class="button_side" id="button_load" onclick="load_circuit(0)"></button>
+					<button class="button_side" id="button_save" onclick="save_circuit()"></button>
+					<button class="button_side button_side_placeholder" id="button_clear" onclick="clear_circuit()"></button>
+					<button class="button_side" id="button_zoomin" onclick="zoom_func(1)"></button>
+					<button class="button_side" id="button_zoomout" onclick="zoom_func(-1)"></button>
+					<button class="button_side button_side_placeholder" id="button_fit" onclick="view_fit()"></button>
+					<button class="button_side" id="button_up" onclick="translate_func(0,2)"></button>
+					<button class="button_side" id="button_down" onclick="translate_func(0,-2)"></button>
+					<button class="button_side" id="button_left" onclick="translate_func(2,0)"></button>
+					<button class="button_side" id="button_right" onclick="translate_func(-2,0)"></button>
 				</div>
 				
 				<div id="div_simulation">
 					<main id="main_p5js">
-
 					</main>
 				</div>
+				
+				<iframe id="iframe_manual" class="iframe_pdf" src="./manual.pdf"></iframe>
+				<iframe id="iframe_task" class="iframe_pdf" src="./task.pdf"></iframe>
 				
 				<form id="input_form" onsubmit="load_circuit(1); return false">
 					<p>
@@ -48,9 +50,11 @@
 				</form>
 				
 				<div id="div_button_side">
-					<button class="button_side button_manual" onclick="manual()"></button>
-					<button class="button_side button_task" onclick="task()"></button>
-					<button class="button_side button_check button_side_placeholder" onclick="check()"></button>
+				<button class="button_side" id="button_close" onclick="close_window()"></button>
+					<button class="button_side button_side_placeholder" id="button_open_new_window" onclick="open_new_window()"></button>
+					<button class="button_side" id="button_manual" onclick="manual()"></button>
+					<button class="button_side" id="button_task" onclick="task()"></button>
+					<button class="button_side button_side_placeholder" id="button_check" onclick="check()"></button>
 					<img class="img_side" id="alarm" src="./images/alarm.png"></img>
 					</div>
 			</div>
