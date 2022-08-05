@@ -20,7 +20,7 @@
 			</div>
 			
 			<div id="div_main">
-				<div id="div_button_side">
+				<div id="div_button_side_left">
 					<button class="button_side" id="button_load" onclick="load_circuit(0)"></button>
 					<button class="button_side" id="button_save" onclick="save_circuit()"></button>
 					<button class="button_side button_side_placeholder" id="button_clear" onclick="clear_circuit()"></button>
@@ -38,8 +38,19 @@
 					</main>
 				</div>
 				
-				<iframe id="iframe_manual" class="iframe_pdf" src="./manual.pdf"></iframe>
-				<iframe id="iframe_task" class="iframe_pdf" src="./task.pdf"></iframe>
+				<iframe id="iframe_manual" class="iframe_pdf" src="./other/manual.pdf"></iframe>
+				<iframe id="iframe_task" class="iframe_pdf" src="./other/task.pdf"></iframe>
+				<div id="div_welcome">
+					<span id="span_title">LogiScript</span><br>
+					<span id="span_welcome">Guten Tag,  </span><br>
+					<span id="span_menu">
+						<button class="button_menu" onclick="task()"><img class="img_side" src="./images/task.png"></img><br>Aufgabenstellung</button>
+						<button class="button_menu" onclick="manual()"><img class="img_side" src="./images/manual.png"></img><br>Handbuch</button>
+						<button class="button_menu" onclick="simulation()"><img class="img_side" src="./images/simulation.png"></img><br>Simulator</button>
+						<br>Wählen Sie etwas aus um fortzufahren.
+						<br>Sie können jederzeit zurückkehren.
+					</span>
+				</div>
 				
 				<form id="input_form" onsubmit="load_circuit(1); return false">
 					<p>
@@ -49,12 +60,14 @@
 					</p>
 				</form>
 				
-				<div id="div_button_side">
-				<button class="button_side" id="button_close" onclick="close_window()"></button>
-					<button class="button_side button_side_placeholder" id="button_open_new_window" onclick="open_new_window()"></button>
-					<button class="button_side" id="button_manual" onclick="manual()"></button>
-					<button class="button_side" id="button_task" onclick="task()"></button>
+				<div id="div_button_side_right">
 					<button class="button_side button_side_placeholder" id="button_check" onclick="check()"></button>
+					<button class="button_side" id="button_close" onclick="simulation()"></button>
+					<button class="button_side" id="button_open_new_window" onclick="open_new_window()"></button>
+					<button class="button_side" id="button_main_page" onclick="main_page()"></button>
+					<button class="button_side" id="button_task" onclick="task()"></button>
+					<button class="button_side" id="button_manual" onclick="manual()"></button>
+					<button class="button_side button_side_placeholder" id="button_simulation" onclick="simulation()"></button>
 					<img class="img_side" id="alarm" src="./images/alarm.png"></img>
 					</div>
 			</div>

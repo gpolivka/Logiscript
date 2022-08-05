@@ -15,7 +15,7 @@ const grab_color = '#707070';
 const undefined_color = '#808080';
 const low_color = '#000000';
 const high_color = '#00FF00';
-const wire_no_connection_color = '#FF0000';
+const no_connection_color = '#FF0000';
 
 
 const groups = {
@@ -65,8 +65,8 @@ var shortcircuitflag = 0;
 var max_iterations = 100;
 var max_file_length = 100000;
 var disable_event_flag = 0;
-var blop = new Audio("./sounds/blop.mp3");
 var new_drag_flag = 1;
+var setup_ready_flag = 0;
 
 
 class Obj
@@ -94,10 +94,96 @@ class Obj
 
 	draw()
 	{
+		var found = 0;
 		switch(this.group)
 		{
 			case groups.gate:
-				strokeCap(PROJECT);
+				var binary = dec2bin(this.inv);
+				switch(this.stat)
+				{
+					case 0:
+						stroke(low_color);
+						break;
+						
+					case 1:
+						stroke(high_color);
+						break;
+						
+					case 2:
+						stroke(undefined_color);
+						break;
+						
+					default:
+						alert("Fehler: Unbekannter Zustand!");
+						break;
+				}
+				strokeWeight(grid_distance/5);
+				line(this.x+this.w, this.y+this.h/2-((this.h/grid_distance)%2)*grid_distance/2, this.x+this.w+grid_distance, this.y+this.h/2-((this.h/grid_distance)%2)*grid_distance/2);
+				found = 0;
+				for(let c of connections)
+				{
+					if(c.x==this.x+this.w+grid_distance && c.y==this.y+this.h/2-((this.h/grid_distance)%2)*grid_distance/2)
+					{
+						found = 1;
+					}
+				}
+				if(found==0)
+				{
+					noconnections.push(new NoCon(this.x+this.w+grid_distance, this.y+this.h/2-((this.h/grid_distance)%2)*grid_distance/2, this));
+				}
+				
+				if(binary[0]=='1')
+				{
+					stroke(0);
+					fill('#FFFFFF');
+					circle(this.x+this.w+grid_distance*3/8, this.y+this.h/2-((this.h/grid_distance)%2)*grid_distance/2, grid_distance/2);
+				}
+				for(var i=1; i<this.h/grid_distance; i++)
+				{
+					let stat = 2;
+					found = 0;
+					for(let c of connections)
+					{
+						if(c.x==this.x-grid_distance && c.y==this.y+(i*grid_distance))
+						{
+							stat = c.stat;
+							found = 1;
+						}
+					}
+					switch(stat)
+					{
+						case 0:
+							stroke(low_color);
+							break;
+							
+						case 1:
+							stroke(high_color);
+							break;
+							
+						case 2:
+							stroke(undefined_color);
+							break;
+							
+						default:
+							alert("Fehler: Unbekannter Zustand!");
+							break;
+					}
+					strokeWeight(grid_distance/5);
+					
+					line(this.x-grid_distance, this.y+(i*grid_distance), this.x, this.y+(i*grid_distance));
+					if(found==0)
+					{
+						noconnections.push(new NoCon(this.x-grid_distance, this.y+(i*grid_distance), this));
+					}
+					
+					if(i-1<binary.length && binary[binary.length-i]=='1')
+					{
+						stroke(0);
+						fill('#FFFFFF');
+						circle(this.x-grid_distance*3/8, this.y+(i*grid_distance), grid_distance/2);
+					}
+				}
+				
 				fill_color(this);
 				stroke(gate_stroke_color);
 				strokeWeight(grid_distance/5);
@@ -133,12 +219,10 @@ class Obj
 						textAlign(RIGHT, CENTER);
 						text("D", this.x+this.w/4+grid_distance/4, this.y+grid_distance);
 						text("Q", this.x+this.w-grid_distance/4, this.y+grid_distance);
-						strokeCap(ROUND);
 						stroke(gate_stroke_color);
 						strokeWeight(grid_distance/5);
 						line(this.x, this.y+grid_distance*13/8, this.x+grid_distance*4/8, this.y+2*grid_distance);
 						line(this.x+grid_distance*4/8, this.y+2*grid_distance, this.x, this.y+grid_distance*19/8);
-						strokeCap(PROJECT);
 						break;
 						
 					case types.jk:
@@ -148,89 +232,19 @@ class Obj
 						text("J", this.x+this.w/4+grid_distance/4, this.y+grid_distance);
 						text("K", this.x+this.w/4+grid_distance/4, this.y+3*grid_distance);
 						text("Q", this.x+this.w-grid_distance/4, this.y+2*grid_distance);
-						strokeCap(ROUND);
 						stroke(gate_stroke_color);
 						strokeWeight(grid_distance/5);
 						line(this.x, this.y+grid_distance*13/8, this.x+grid_distance*4/8, this.y+2*grid_distance);
 						line(this.x+grid_distance*4/8, this.y+2*grid_distance, this.x, this.y+grid_distance*19/8);
-						strokeCap(PROJECT);
 						break;
 					
 					default:
 						alert("Fehler: Unbekannter Gate-Typ!");
 						break;
 				}
-				
-				var binary = dec2bin(this.inv);
-				switch(this.stat)
-				{
-					case 0:
-						stroke(low_color);
-						break;
-						
-					case 1:
-						stroke(high_color);
-						break;
-						
-					case 2:
-						stroke(undefined_color);
-						break;
-						
-					default:
-						alert("Fehler: Unbekannter Zustand!");
-						break;
-				}
-				strokeWeight(grid_distance/5);
-				line(this.x+this.w+(grid_distance/5), this.y+this.h/2-((this.h/grid_distance)%2)*grid_distance/2, this.x+this.w+grid_distance, this.y+this.h/2-((this.h/grid_distance)%2)*grid_distance/2);
-				if(binary[0]=='1')
-				{
-					stroke(0);
-					fill('#FFFFFF');
-					circle(this.x+this.w+grid_distance*3/8, this.y+this.h/2-((this.h/grid_distance)%2)*grid_distance/2, grid_distance/2);
-				}
-				for(var i=1; i<this.h/grid_distance; i++)
-				{
-					let stat = 2;
-					for(let c of connections)
-					{
-						if(c.x==this.x-grid_distance && c.y==this.y+(i*grid_distance))
-						{
-							stat = c.stat;
-						}
-					}
-					switch(stat)
-					{
-						case 0:
-							stroke(low_color);
-							break;
-							
-						case 1:
-							stroke(high_color);
-							break;
-							
-						case 2:
-							stroke(undefined_color);
-							break;
-							
-						default:
-							alert("Fehler: Unbekannter Zustand!");
-							break;
-					}
-					strokeWeight(grid_distance/5);
-					
-					line(this.x-grid_distance, this.y+(i*grid_distance), this.x-(grid_distance/5), this.y+(i*grid_distance));
-					
-					if(i-1<binary.length && binary[binary.length-i]=='1')
-					{
-						stroke(0);
-						fill('#FFFFFF');
-						circle(this.x-grid_distance*3/8, this.y+(i*grid_distance), grid_distance/2);
-					}
-				}
 				break;
 			
 			case groups.wire:
-				strokeCap(ROUND);
 				switch(this.stat)
 				{
 					case 0:
@@ -262,7 +276,39 @@ class Obj
 				break;
 				
 			case groups.input:
-				strokeCap(PROJECT);
+				switch(this.stat)
+				{
+					case 0:
+						stroke(low_color);
+						break;
+						
+					case 1:
+						stroke(high_color);
+						break;
+						
+					case 2:
+						stroke(undefined_color);
+						break;
+						
+					default:
+						alert("Fehler: Unbekannter Zustand!");
+						break;
+				}
+				strokeWeight(grid_distance/5);
+				line(this.x+this.w, this.y+this.h/2-((this.h/grid_distance)%2)*grid_distance/2, this.x+this.w+grid_distance, this.y+this.h/2-((this.h/grid_distance)%2)*grid_distance/2);
+				found = 0;
+				for(let c of connections)
+				{
+					if(c.x==this.x+this.w+grid_distance && c.y==this.y+this.h/2-((this.h/grid_distance)%2)*grid_distance/2)
+					{
+						found = 1;
+					}
+				}
+				if(found==0)
+				{
+					noconnections.push(new NoCon(this.x+this.w+grid_distance, this.y+this.h/2-((this.h/grid_distance)%2)*grid_distance/2, this));
+				}
+				
 				fill_color(this);
 				stroke(gate_stroke_color);
 				strokeWeight(grid_distance/5);
@@ -304,7 +350,9 @@ class Obj
 						text(this.spec_1, this.x+(this.w/2)+grid_distance/4, this.y+(this.h/2)+grid_distance/2);
 					}
 				}
+				break;
 				
+			case groups.output:
 				switch(this.stat)
 				{
 					case 0:
@@ -324,11 +372,20 @@ class Obj
 						break;
 				}
 				strokeWeight(grid_distance/5);
-				line(this.x+this.w+(grid_distance/5), this.y+this.h/2-((this.h/grid_distance)%2)*grid_distance/2, this.x+this.w+grid_distance, this.y+this.h/2-((this.h/grid_distance)%2)*grid_distance/2);
-				break;
+				line(this.x, this.y+this.h/2-((this.h/grid_distance)%2)*grid_distance/2, this.x-grid_distance, this.y+this.h/2-((this.h/grid_distance)%2)*grid_distance/2);
+				found = 0;
+				for(let c of connections)
+				{
+					if(c.x==this.x-grid_distance && c.y==this.y+this.h/2-((this.h/grid_distance)%2)*grid_distance/2)
+					{
+						found = 1;
+					}
+				}
+				if(found==0)
+				{
+					noconnections.push(new NoCon(this.x-grid_distance, this.y+this.h/2-((this.h/grid_distance)%2)*grid_distance/2, this));
+				}
 				
-			case groups.output:
-				strokeCap(PROJECT);
 				stroke(gate_stroke_color);
 				strokeWeight(grid_distance/5);
 				switch(this.stat)
@@ -371,31 +428,9 @@ class Obj
 					textAlign(LEFT, CENTER);
 					text(this.spec_1, this.x+(this.w/2)+grid_distance/4, this.y+(this.h/2)+grid_distance/2);
 				}
-				
-				switch(this.stat)
-				{
-					case 0:
-						stroke(low_color);
-						break;
-						
-					case 1:
-						stroke(high_color);
-						break;
-						
-					case 2:
-						stroke(undefined_color);
-						break;
-						
-					default:
-						alert("Fehler: Unbekannter Zustand!");
-						break;
-				}
-				strokeWeight(grid_distance/5);
-				line(this.x-(grid_distance/5), this.y+this.h/2-((this.h/grid_distance)%2)*grid_distance/2, this.x-grid_distance, this.y+this.h/2-((this.h/grid_distance)%2)*grid_distance/2);
 				break;
 				
 			case groups.fixed:
-				strokeCap(PROJECT);
 				fill(0);
 				stroke(gate_color);
 				textSize(grid_distance);
@@ -424,27 +459,21 @@ class Obj
 				}
 				strokeWeight(grid_distance/5);
 				line(this.x+grid_distance/2, this.y, this.x+grid_distance, this.y);
+				found = 0;
+				for(let c of connections)
+				{
+					if(c.x==this.x+grid_distance && c.y==this.y)
+					{
+						found = 1;
+					}
+				}
+				if(found==0)
+				{
+					noconnections.push(new NoCon(this.x+grid_distance, this.y, this));
+				}
 				break;
 				
 			case groups.zff:
-				strokeCap(PROJECT);
-				fill_color(this);
-				stroke(gate_stroke_color);
-				strokeWeight(grid_distance/5);
-				rect(this.x, this.y, this.w, this.h, corner_radius);
-				strokeCap(ROUND);
-				line(this.x+this.w*11/32, this.y+this.h, this.x+this.w/2, this.y+this.h-this.w*5/32);
-				line(this.x+this.w*21/32, this.y+this.h, this.x+this.w/2, this.y+this.h-this.w*5/32);
-				strokeCap(PROJECT);
-				fill(0);
-				
-				stroke(gate_color);
-				textSize(grid_distance);
-				textFont('Arial');
-				textStyle(BOLD);
-				textAlign(CENTER, CENTER);
-				text("Z", this.x+(this.w/2), this.y+(this.h/2));
-				
 				let stat = 2;
 				for(let c of connections)
 				{
@@ -472,8 +501,7 @@ class Obj
 						break;
 				}
 				strokeWeight(grid_distance/5);
-				line(this.x+this.w/2, this.y+this.h+grid_distance/5, this.x+this.w/2, this.y+this.h+grid_distance);
-				
+				line(this.x+this.w/2, this.y+this.h, this.x+this.w/2, this.y+this.h+grid_distance);
 				for(var i=1; i<this.h/grid_distance; i++)
 				{
 					stat = 2;
@@ -503,8 +531,73 @@ class Obj
 							break;
 					}
 					strokeWeight(grid_distance/5);
-					line(this.x+this.w+grid_distance/5, this.y+(i*grid_distance), this.x+this.w+grid_distance, this.y+(i*grid_distance));
+					line(this.x+this.w, this.y+(i*grid_distance), this.x+this.w+grid_distance, this.y+(i*grid_distance));
 					
+					if(this.type==types.jk && i%2==1)
+					{
+						switch(this.stat[floor(i/2)])
+						{
+							case 0:
+								stroke(low_color);
+								break;
+								
+							case 1:
+								stroke(high_color);
+								break;
+								
+							case 2:
+								stroke(undefined_color);
+								break;
+								
+							default:
+								alert("Fehler: Unbekannter Zustand!");
+								break;
+						}
+						strokeWeight(grid_distance/5);
+						line(this.x, this.y+(i*grid_distance), this.x-grid_distance, this.y+(i*grid_distance));
+					}
+					else if(this.type==types.d)
+					{
+						switch(this.stat[i-1])
+						{
+							case 0:
+								stroke(low_color);
+								break;
+								
+							case 1:
+								stroke(high_color);
+								break;
+								
+							case 2:
+								stroke(undefined_color);
+								break;
+								
+							default:
+								alert("Fehler: Unbekannter Zustand!");
+								break;
+						}
+						strokeWeight(grid_distance/5);
+						line(this.x, this.y+(i*grid_distance), this.x-grid_distance, this.y+(i*grid_distance));
+					}
+				}
+				
+				fill_color(this);
+				stroke(gate_stroke_color);
+				strokeWeight(grid_distance/5);
+				rect(this.x, this.y, this.w, this.h, corner_radius);
+				line(this.x+this.w*11/32, this.y+this.h, this.x+this.w/2, this.y+this.h-this.w*5/32);
+				line(this.x+this.w*21/32, this.y+this.h, this.x+this.w/2, this.y+this.h-this.w*5/32);
+				fill(0);
+				
+				stroke(gate_color);
+				textSize(grid_distance);
+				textFont('Arial');
+				textStyle(BOLD);
+				textAlign(CENTER, CENTER);
+				text("Z", this.x+(this.w/2), this.y+(this.h/2));
+				
+				for(var i=1; i<this.h/grid_distance; i++)
+				{
 					strokeWeight(grid_distance/10);
 					stroke(gate_color);
 					textSize(grid_distance*0.75);
@@ -535,27 +628,6 @@ class Obj
 					
 					if(this.type==types.jk && i%2==1)
 					{
-						switch(this.stat[floor(i/2)])
-						{
-							case 0:
-								stroke(low_color);
-								break;
-								
-							case 1:
-								stroke(high_color);
-								break;
-								
-							case 2:
-								stroke(undefined_color);
-								break;
-								
-							default:
-								alert("Fehler: Unbekannter Zustand!");
-								break;
-						}
-						strokeWeight(grid_distance/5);
-						line(this.x-grid_distance/5, this.y+(i*grid_distance), this.x-grid_distance, this.y+(i*grid_distance));
-						
 						strokeWeight(grid_distance/10);
 						stroke(gate_color);
 						textSize(grid_distance*0.75);
@@ -569,27 +641,6 @@ class Obj
 					}
 					else if(this.type==types.d)
 					{
-						switch(this.stat[i-1])
-						{
-							case 0:
-								stroke(low_color);
-								break;
-								
-							case 1:
-								stroke(high_color);
-								break;
-								
-							case 2:
-								stroke(undefined_color);
-								break;
-								
-							default:
-								alert("Fehler: Unbekannter Zustand!");
-								break;
-						}
-						strokeWeight(grid_distance/5);
-						line(this.x-grid_distance/5, this.y+(i*grid_distance), this.x-grid_distance, this.y+(i*grid_distance));
-						
 						strokeWeight(grid_distance/10);
 						stroke(gate_color);
 						textSize(grid_distance*0.75);
@@ -850,6 +901,11 @@ class NoCon
 
 function setup()
 {
+	if(setup_ready_flag==0)
+	{
+		return;
+	}
+	
 	createCanvas(document.getElementById('div_simulation').clientWidth, document.getElementById('div_simulation').clientHeight);
 	grid_size_x = document.getElementById('div_simulation').clientWidth;
 	grid_size_y = document.getElementById('div_simulation').clientHeight;
@@ -857,12 +913,9 @@ function setup()
 	p5.disableFriendlyErrors = true;
 	frameRate(24);
 	noLoop();
+	strokeCap(ROUND);
 	
-	//TESTTESTTEST##########################################
-	alert("Name: "+ScormProcessGetValue("cmi.learner_name", true)+"\n"+"ID: "+ScormProcessGetValue("cmi.learner_id", true));
-	//TESTTESTTEST##########################################
-	
-	let text = "";//ScormProcessGetValue("cmi.suspend_data", true);
+	let text = ScormProcessGetValue("cmi.suspend_data", true);
 	if(text[text.length-1]!=';')
 	{
 		return;
@@ -900,6 +953,7 @@ function setup()
 			return;
 		}
 	}
+		
 	update_connections(0);
 	view_fit();
 }
@@ -966,7 +1020,7 @@ function update_connections(only_connections)
 				{
 					if(p.group==groups.gate && p!=o)
 					{
-						if(o.x+o.w+grid_distance == p.x-grid_distance && (p.y<o.y+o.h/2-((o.h/grid_distance)%2)*grid_distance/2 && p.y+p.h>o.y+o.h/2-((o.h/grid_distance)%2)*grid_distance/2))
+						if(o.x+o.w+grid_distance==p.x-grid_distance && (p.y<o.y+o.h/2-((o.h/grid_distance)%2)*grid_distance/2 && p.y+p.h>o.y+o.h/2-((o.h/grid_distance)%2)*grid_distance/2))
 						{
 							create_connection(o.x+o.w+grid_distance,o.y+o.h/2-((o.h/grid_distance)%2)*grid_distance/2,o,p);
 						}
@@ -1069,7 +1123,7 @@ function update_connections(only_connections)
 				{
 					if(p.group==groups.gate)
 					{
-						if(o.x+o.w+grid_distance == p.x-grid_distance && (p.y<o.y+o.h/2-((o.h/grid_distance)%2)*grid_distance/2 && p.y+p.h>o.y+o.h/2-((o.h/grid_distance)%2)*grid_distance/2))
+						if(o.x+o.w+grid_distance==p.x-grid_distance && (p.y<o.y+o.h/2-((o.h/grid_distance)%2)*grid_distance/2 && p.y+p.h>o.y+o.h/2-((o.h/grid_distance)%2)*grid_distance/2))
 						{
 							create_connection(o.x+o.w+grid_distance,o.y+o.h/2-((o.h/grid_distance)%2)*grid_distance/2,o,p);
 						}
@@ -1175,10 +1229,6 @@ function update_connections(only_connections)
 		}
 	}
 	
-	if(connections_new.length>connections.length && only_connections==0)
-	{
-		blop.play();
-	}
 	connections.length = 0;
 	connections.push.apply(connections, connections_new);
 	
@@ -1219,7 +1269,6 @@ function update_connections(only_connections)
 					noconnections.push(new NoCon(w.x+w.w, w.y+w.h, w));
 				}
 			}
-			
 		}
 	}
 	
@@ -1276,7 +1325,7 @@ function draw_connections()
 	strokeWeight(grid_distance/5);
 	for(let c of connections)
 	{
-		if(c.obj_list.length==2 && c.obj_list[0].group==groups.wire && c.obj_list[1].group==groups.wire)
+		if(c.obj_list.length==2)
 		{
 			continue;
 		}
@@ -1305,11 +1354,11 @@ function draw_connections()
 		circle(c.x, c.y, grid_distance/4);
 	}
 	
-	stroke(wire_no_connection_color);
-	fill(wire_no_connection_color);
+	stroke(no_connection_color);
+	fill(no_connection_color);
 	for(let c of noconnections)
 	{
-		circle(c.x, c.y, grid_distance/4);
+		circle(c.x, c.y, grid_distance/1000);
 	}
 }
 
@@ -1586,6 +1635,11 @@ function mouseMoved()
 	hover = null;
 	for(let o of objects)
 	{
+		if(o.erase==1)
+		{
+			continue;
+		}
+		
 		if(o.group==groups.gate || o.group==groups.input || o.group==groups.output || o.group==groups.zff)
 		{
 			if(m.x>o.x-grid_distance*3/8-grab_tolerance*(grid_distance/5) && m.x<o.x+o.w+grid_distance*3/8+grab_tolerance*(grid_distance/5) && m.y>o.y-grab_tolerance*(grid_distance/5) && m.y<o.y+o.h+grab_tolerance*(grid_distance/5))
@@ -1692,6 +1746,25 @@ function mousePressed()
 	{
 		if(m.x>0 && m.y>0 && m.x<width && m.y<height)
 		{
+			if(hover!=null && hover.group==groups.wire)
+			{
+				let w_1 = round((m.x-hover.x)/grid_distance)*grid_distance;
+				let h_1 = round((m.y-hover.y)/grid_distance)*grid_distance;
+				let w_2 = hover.x+hover.w-round(m.x/grid_distance)*grid_distance;
+				let h_2 = hover.y+hover.h-round(m.y/grid_distance)*grid_distance;
+				
+				if(w_1!=0 || h_1!=0)
+				{
+					wire_1 = new Obj(hover.x, hover.y, round((m.x-hover.x)/grid_distance)*grid_distance, round((m.y-hover.y)/grid_distance)*grid_distance, groups.wire,0,0,2,0,0,0);
+					objects.push(wire_1);
+				}
+				if(w_2!=0 || h_2!=0)
+				{
+					wire_2 = new Obj(round(m.x/grid_distance)*grid_distance, round(m.y/grid_distance)*grid_distance, hover.x+hover.w-round(m.x/grid_distance)*grid_distance, hover.y+hover.h-round(m.y/grid_distance)*grid_distance, groups.wire,0,0,2,0,0,0);
+					objects.push(wire_2);
+				}
+				objects.splice(objects.indexOf(hover), 1);
+			}
 			if(wired)
 			{
 				wired.spec_1 = 0;
@@ -1705,25 +1778,6 @@ function mousePressed()
 			}
 			else
 			{
-				if(hover!=null && hover.group==groups.wire)
-				{
-					let w_1 = round((m.x-hover.x)/grid_distance)*grid_distance;
-					let h_1 = round((m.y-hover.y)/grid_distance)*grid_distance;
-					let w_2 = hover.x+hover.w-round(m.x/grid_distance)*grid_distance;
-					let h_2 = hover.y+hover.h-round(m.y/grid_distance)*grid_distance;
-					
-					if(w_1!=0 || h_1!=0)
-					{
-						wire_1 = new Obj(hover.x, hover.y, round((m.x-hover.x)/grid_distance)*grid_distance, round((m.y-hover.y)/grid_distance)*grid_distance, groups.wire,0,0,2,0,0,0);
-						objects.push(wire_1);
-					}
-					if(w_2!=0 || h_2!=0)
-					{
-						wire_2 = new Obj(round(m.x/grid_distance)*grid_distance, round(m.y/grid_distance)*grid_distance, hover.x+hover.w-round(m.x/grid_distance)*grid_distance, hover.y+hover.h-round(m.y/grid_distance)*grid_distance, groups.wire,0,0,2,0,0,0);
-						objects.push(wire_2);
-					}
-					objects.splice(objects.indexOf(hover), 1);
-				}
 				wired = new Obj(round(m.x/grid_distance)*grid_distance, round(m.y/grid_distance)*grid_distance, 0, 0, groups.wire,0,0,2,0,1,0);
 				objects.push(wired);
 			}
@@ -2067,23 +2121,91 @@ function view_fit()
 	var o_x_max = objects[0];
 	var o_y_max = objects[0];
 	
+	var x_min = o_x_min.x;
+	var y_min = o_y_min.y;
+	var x_max = o_x_max.x+o_x_max.w;
+	var y_max = o_y_max.y+o_y_max.h;
+	
 	for(let o of objects)
 	{
-		if(o.x<o_x_min.x || o.x+o.w<o_x_min.x || (o.x<o_x_min.x+o_x_min.w && o_x_min.w<0))
+		if(o.group!=groups.wire)
 		{
-			o_x_min = o;
+			if(o.x<x_min)
+			{
+				o_x_min = o;
+				x_min = o.x;
+			}
+			if(o.x+o.w>o_x_max.x+o_x_max.w)
+			{
+				o_x_max = o;
+				x_max = o.x+o.w;
+			}
+			if(o.y<o_y_min.y)
+			{
+				o_y_min = o;
+				y_min = o.y;
+			}
+			if(o.y+o.h>o_y_max.y+o_y_max.h)
+			{
+				o_y_max = o;
+				y_max = o.y+o.h;
+			}
 		}
-		if(o.x+o.w>o_x_max.x+o_x_max.w || o.x-o.w>o_x_max.x+o_x_max.w || (o.x+o.w>o_x_max.x-o_x_max.w && o_x_max.w<0))
+		else
 		{
-			o_x_max = o;
-		}
-		if(o.y<o_y_min.y || o.y+o.h<o_y_min.y || (o.y<o_y_min.y+o_y_min.h && o_y_min.h<0))
-		{
-			o_y_min = o;
-		}
-		if(o.y+o.h>o_y_max.y+o_y_max.h || o.y-o.h>o_y_max.y+o_y_max.h || (o.y+o.h>o_y_max.y-o_y_max.h && o_y_max.h<0))
-		{
-			o_y_max = o;
+			if(o.w<0)
+			{
+				if(o.x+o.w<x_min)
+				{
+					o_x_min = o;
+					x_min = o.x+o.w;
+				}
+				if(o.x>o_x_max.x+o_x_max.w)
+				{
+					o_x_max = o;
+					x_max = o.x;
+				}
+			}
+			else
+			{
+				if(o.x<x_min)
+				{
+					o_x_min = o;
+					x_min = o.x;
+				}
+				if(o.x+o.w>o_x_max.x+o_x_max.w)
+				{
+					o_x_max = o;
+					x_max = o.x+o.w;
+				}
+			}
+			
+			if(o.h<0)
+			{
+				if(o.y+o.h<o_y_min.y)
+				{
+					o_y_min = o;
+					y_min = o.y+o.h;
+				}
+				if(o.y>o_y_max.y+o_y_max.h)
+				{
+					o_y_max = o;
+					y_max = o.y;
+				}
+			}
+			else
+			{
+				if(o.y<o_y_min.y)
+				{
+					o_y_min = o;
+					y_min = o.y;
+				}
+				if(o.y+o.h>o_y_max.y+o_y_max.h)
+				{
+					o_y_max = o;
+					y_max = o.y+o.h;
+				}
+			}
 		}
 	}
 	
@@ -2400,22 +2522,44 @@ function clear_circuit()
 	}
 }
 
-function manual()
-{
-	document.getElementById("iframe_manual").style.visibility = "visible";
-	document.getElementById("iframe_task").style.visibility = "collapse";
-	document.getElementById("div_simulation").style.visibility = "collapse";
-	document.getElementById("button_close").style.display = "inline";
-	document.getElementById("button_open_new_window").style.display = "inline";
-}
-
 function task()
 {
+	document.getElementById("div_welcome").style.display = "none";
 	document.getElementById("iframe_manual").style.visibility = "collapse";
 	document.getElementById("iframe_task").style.visibility = "visible";
 	document.getElementById("div_simulation").style.visibility = "collapse";
 	document.getElementById("button_close").style.display = "inline";
 	document.getElementById("button_open_new_window").style.display = "inline";
+	document.getElementById("button_check").style.display = "none";
+	document.getElementById("alarm").style.display = "none";
+	
+	document.getElementById("button_task").style.borderStyle = "inset";
+	document.getElementById("button_manual").style.borderStyle = "outset";
+	document.getElementById("button_simulation").style.borderStyle = "outset";
+	
+	document.getElementById("div_button_top").style.visibility = "collapse";
+	document.getElementById("div_button_side_left").style.display = "none";
+	document.getElementById("div_button_side_right").style.display = "inline";
+}
+
+function manual()
+{
+	document.getElementById("div_welcome").style.display = "none";
+	document.getElementById("iframe_manual").style.visibility = "visible";
+	document.getElementById("iframe_task").style.visibility = "collapse";
+	document.getElementById("div_simulation").style.visibility = "collapse";
+	document.getElementById("button_close").style.display = "inline";
+	document.getElementById("button_open_new_window").style.display = "inline";
+	document.getElementById("button_check").style.display = "none";
+	document.getElementById("alarm").style.display = "none";
+	
+	document.getElementById("button_task").style.borderStyle = "outset";
+	document.getElementById("button_manual").style.borderStyle = "inset";
+	document.getElementById("button_simulation").style.borderStyle = "outset";
+	
+	document.getElementById("div_button_top").style.visibility = "collapse";
+	document.getElementById("div_button_side_left").style.display = "none";
+	document.getElementById("div_button_side_right").style.display = "inline";
 }
 
 function check()
@@ -2423,26 +2567,99 @@ function check()
 	alert("Schaltung überprüfen");
 }
 
-function close_window()
+function simulation()
 {
+	document.getElementById("div_welcome").style.display = "none";
 	document.getElementById("iframe_manual").style.visibility = "collapse";
 	document.getElementById("iframe_task").style.visibility = "collapse";
 	document.getElementById("div_simulation").style.visibility = "visible";
 	document.getElementById("button_close").style.display = "none";
 	document.getElementById("button_open_new_window").style.display = "none";
+	document.getElementById("button_check").style.display = "inline";
+	document.getElementById("alarm").style.display = "inline";
+	
+	document.getElementById("button_task").style.borderStyle = "outset";
+	document.getElementById("button_manual").style.borderStyle = "outset";
+	document.getElementById("button_simulation").style.borderStyle = "inset";
+	
+	document.getElementById("div_button_top").style.visibility = "visible";
+	document.getElementById("div_button_side_left").style.display = "inline";
+	document.getElementById("div_button_side_right").style.display = "inline";
+	
+	if(setup_ready_flag==0)
+	{
+		setup_ready_flag = 1;
+		setup();
+	}
 }
 
 function open_new_window()
 {
 	if(document.getElementById("iframe_manual").style.visibility=="visible")
 	{
-		window.open ("./manual.pdf","","popup");
+		window.open ("./other/manual.pdf","","popup");
 	}
 	else
 	{
-		window.open ("./task.pdf","","popup");
+		window.open ("./other/task.pdf","","popup");
 	}
-	close_window();
+	simulation();
+}
+
+function main_page()
+{
+	document.getElementById("div_welcome").style.display = "inline";
+	document.getElementById("iframe_manual").style.visibility = "collapse";
+	document.getElementById("iframe_task").style.visibility = "collapse";
+	document.getElementById("div_simulation").style.visibility = "collapse";
+	document.getElementById("button_close").style.display = "none";
+	document.getElementById("button_open_new_window").style.display = "none";
+	
+	document.getElementById("div_button_top").style.visibility = "collapse";
+	document.getElementById("div_button_side_left").style.display = "none";
+	document.getElementById("div_button_side_right").style.display = "none";
+}
+
+function set_input(label, stat)
+{
+	let found = 0;
+	for(let o of objects)
+	{
+		if(o.group==groups.input && o.spec_1==label)
+		{
+			o.stat = stat;
+			update_connections(0);
+			return 0;
+		}
+	}
+	if(found==0)
+	{
+		return 1;
+	}
+}
+
+function read_output(label)
+{
+	let found = 0;
+	for(let o of objects)
+	{
+		if(o.group==groups.output && o.spec_1==label)
+		{
+			return o.stat;
+			return 0;
+		}
+	}
+	if(found==0)
+	{
+		return 1;
+	}
+}
+
+function setup_task()
+{
+	let name = ScormProcessGetValue("cmi.learner_name", true).split(',');
+	document.getElementById("span_welcome").innerHTML = "Guten Tag, <b>"+name[1]+" "+name[0]+"</b>";
+	//alert("ID: "+ScormProcessGetValue("cmi.learner_id", true));
 }
 
 function LogiScript()
@@ -2477,13 +2694,12 @@ var processedUnload = false;
 function doStart()
 {
 	startTimeStamp = new Date();
-	
 	ScormProcessInitialize();
-	
 	var completionStatus = ScormProcessGetValue("cmi.completion_status", true);
 	if (completionStatus == "unknown"){
 		ScormProcessSetValue("cmi.completion_status", "incomplete");
 	}
+	setup_task();
 }
 
 function doUnload(pressedExit)
