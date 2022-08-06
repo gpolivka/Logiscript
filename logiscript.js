@@ -386,47 +386,69 @@ class Obj
 					noconnections.push(new NoCon(this.x-grid_distance, this.y+this.h/2-((this.h/grid_distance)%2)*grid_distance/2, this));
 				}
 				
-				stroke(gate_stroke_color);
-				strokeWeight(grid_distance/5);
-				switch(this.stat)
+				if(this==hover || this==grabbed)
 				{
-					case 0:
-						fill(low_color);
-						break;
-						
-					case 1:
-						fill(high_color);
-						break;
-						
-					case 2:
-						fill(undefined_color);
-						break;
-						
-					default:
-						alert("Fehler: Unbekannter Zustand!");
-						break;
-				}
-				rect(this.x, this.y, this.w, this.h, corner_radius);
-				fill(0);
-				
-				stroke(gate_color);
-				textSize(grid_distance);
-				textFont('Arial');
-				textStyle(BOLD);
-				textAlign(RIGHT, CENTER);
-				if(this.spec_1>=10)
-				{
-					text("A", this.x+(this.w/2)+grid_distance/8, this.y+(this.h/2));
-					textSize(grid_distance/2);
-					textAlign(LEFT, CENTER);
-					text(this.spec_1, this.x+(this.w/2)+grid_distance/8, this.y+(this.h/2)+grid_distance/2);
+					stroke(gate_stroke_color);
+					if(this==grabbed)
+					{
+						fill(grab_color);
+					}
+					else
+					{
+						fill(gate_color);
+					}
+					circle(this.x+grid_distance, this.y+grid_distance, this.w);
+					fill(0);
+					stroke(gate_color);
+					textSize(grid_distance);
+					textFont('Arial');
+					textStyle(BOLD);
+					textAlign(RIGHT, CENTER);
+					strokeWeight(0);
+					if(this.spec_1>=10)
+					{
+						text("A", this.x+(this.w/2)+grid_distance/20, this.y+(this.h/2));
+						textSize(grid_distance/2);
+						textAlign(LEFT, CENTER);
+						text(this.spec_1, this.x+(this.w/2)+grid_distance/20, this.y+(this.h/2)+grid_distance/2);
+					}
+					else
+					{
+						text("A", this.x+(this.w/2)+grid_distance/4, this.y+(this.h/2));
+						textSize(grid_distance/2);
+						textAlign(LEFT, CENTER);
+						text(this.spec_1, this.x+(this.w/2)+grid_distance/4, this.y+(this.h/2)+grid_distance/2);
+					}
 				}
 				else
 				{
-					text("A", this.x+(this.w/2)+grid_distance/4, this.y+(this.h/2));
-					textSize(grid_distance/2);
-					textAlign(LEFT, CENTER);
-					text(this.spec_1, this.x+(this.w/2)+grid_distance/4, this.y+(this.h/2)+grid_distance/2);
+					switch(this.stat)
+					{
+						case 0:
+							fill(low_color);
+							break;
+							
+						case 1:
+							fill(high_color);
+							break;
+							
+						case 2:
+							fill(undefined_color);
+							break;
+							
+						default:
+							alert("Fehler: Unbekannter Zustand!");
+							break;
+					}
+					strokeWeight(grid_distance/5);
+					stroke(gate_stroke_color);
+					circle(this.x+grid_distance, this.y+grid_distance, this.w);
+					
+					noFill();
+					strokeWeight(grid_distance/10);
+					stroke(grab_color);
+					circle(this.x+grid_distance, this.y+grid_distance, this.w-grid_distance*3/10);
+					fill(0);
 				}
 				break;
 				
@@ -915,7 +937,7 @@ function setup()
 	noLoop();
 	strokeCap(ROUND);
 	
-	let text = ScormProcessGetValue("cmi.suspend_data", true);
+	let text = "";//ScormProcessGetValue("cmi.suspend_data", true);
 	if(text[text.length-1]!=';')
 	{
 		return;
@@ -2524,6 +2546,7 @@ function clear_circuit()
 
 function task()
 {
+	document.getElementById("button_main_page").style.marginTop = "2px";
 	document.getElementById("div_welcome").style.display = "none";
 	document.getElementById("iframe_manual").style.visibility = "collapse";
 	document.getElementById("iframe_task").style.visibility = "visible";
@@ -2537,13 +2560,14 @@ function task()
 	document.getElementById("button_manual").style.borderStyle = "outset";
 	document.getElementById("button_simulation").style.borderStyle = "outset";
 	
-	document.getElementById("div_button_top").style.visibility = "collapse";
-	document.getElementById("div_button_side_left").style.display = "none";
-	document.getElementById("div_button_side_right").style.display = "inline";
+	//document.getElementById("div_button_top").style.visibility = "collapse";
+	//document.getElementById("div_button_side_left").style.display = "none";
+	//document.getElementById("div_button_side_right").style.display = "inline";
 }
 
 function manual()
 {
+	document.getElementById("button_main_page").style.marginTop = "2px";
 	document.getElementById("div_welcome").style.display = "none";
 	document.getElementById("iframe_manual").style.visibility = "visible";
 	document.getElementById("iframe_task").style.visibility = "collapse";
@@ -2557,9 +2581,9 @@ function manual()
 	document.getElementById("button_manual").style.borderStyle = "inset";
 	document.getElementById("button_simulation").style.borderStyle = "outset";
 	
-	document.getElementById("div_button_top").style.visibility = "collapse";
-	document.getElementById("div_button_side_left").style.display = "none";
-	document.getElementById("div_button_side_right").style.display = "inline";
+	//document.getElementById("div_button_top").style.visibility = "collapse";
+	//document.getElementById("div_button_side_left").style.display = "none";
+	//document.getElementById("div_button_side_right").style.display = "inline";
 }
 
 function check()
@@ -2569,6 +2593,7 @@ function check()
 
 function simulation()
 {
+	document.getElementById("button_main_page").style.marginTop = "2px";
 	document.getElementById("div_welcome").style.display = "none";
 	document.getElementById("iframe_manual").style.visibility = "collapse";
 	document.getElementById("iframe_task").style.visibility = "collapse";
@@ -2582,9 +2607,9 @@ function simulation()
 	document.getElementById("button_manual").style.borderStyle = "outset";
 	document.getElementById("button_simulation").style.borderStyle = "inset";
 	
-	document.getElementById("div_button_top").style.visibility = "visible";
-	document.getElementById("div_button_side_left").style.display = "inline";
-	document.getElementById("div_button_side_right").style.display = "inline";
+	//document.getElementById("div_button_top").style.visibility = "visible";
+	//document.getElementById("div_button_side_left").style.display = "inline";
+	//document.getElementById("div_button_side_right").style.display = "inline";
 	
 	if(setup_ready_flag==0)
 	{
@@ -2608,16 +2633,19 @@ function open_new_window()
 
 function main_page()
 {
+	document.getElementById("button_main_page").style.marginTop = "132px";
 	document.getElementById("div_welcome").style.display = "inline";
 	document.getElementById("iframe_manual").style.visibility = "collapse";
 	document.getElementById("iframe_task").style.visibility = "collapse";
 	document.getElementById("div_simulation").style.visibility = "collapse";
 	document.getElementById("button_close").style.display = "none";
 	document.getElementById("button_open_new_window").style.display = "none";
+	document.getElementById("button_check").style.display = "none";
+	document.getElementById("alarm").style.display = "none";
 	
-	document.getElementById("div_button_top").style.visibility = "collapse";
-	document.getElementById("div_button_side_left").style.display = "none";
-	document.getElementById("div_button_side_right").style.display = "none";
+	//document.getElementById("div_button_top").style.visibility = "collapse";
+	//document.getElementById("div_button_side_left").style.display = "none";
+	//document.getElementById("div_button_side_right").style.display = "none";
 }
 
 function set_input(label, stat)
@@ -2693,17 +2721,21 @@ var processedUnload = false;
 
 function doStart()
 {
+	/*
 	startTimeStamp = new Date();
 	ScormProcessInitialize();
 	var completionStatus = ScormProcessGetValue("cmi.completion_status", true);
 	if (completionStatus == "unknown"){
 		ScormProcessSetValue("cmi.completion_status", "incomplete");
 	}
+	*/
+	alert("Um den Angabe-Auswahl-Algorithmus geheim zu halten\nlade ich zukünftige Versionen nicht mehr auf GitHub hoch.");
 	setup_task();
 }
 
 function doUnload(pressedExit)
 {
+	/*
 	zoom_func(-zoom);
 	let text = "";
 	for(let o of objects)
@@ -2732,10 +2764,12 @@ function doUnload(pressedExit)
 	ScormProcessSetValue("cmi.session_time", scormTime);
 	
 	ScormProcessTerminate();
+	*/
 }
 
 function ConvertMilliSecondsIntoSCORM2004Time(intTotalMilliseconds)
 {
+	/*
 	var ScormTime = "";
 	var HundredthsOfASecond;
 	
@@ -2809,10 +2843,12 @@ function ConvertMilliSecondsIntoSCORM2004Time(intTotalMilliseconds)
 	
 	ScormTime = "P"+ScormTime;
 	return ScormTime;
+	*/
 }
 
 function RecordTest()
 {
+	/*
 	let score = 100;
 	ScormProcessSetValue("cmi.score.raw", score);
 	ScormProcessSetValue("cmi.score.min", "0");
@@ -2821,5 +2857,6 @@ function RecordTest()
 	
 	ScormProcessSetValue("cmi.success_status", "passed");
 	ScormProcessSetValue("cmi.completion_status", "completed");
+	*/
 }
 //SCORM-Ende ---------------------------------------------------
